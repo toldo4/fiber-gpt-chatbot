@@ -16,28 +16,28 @@ interface SuggestedActionsProps {
 }
 
 function PureSuggestedActions({ chatId, append, isFollowUp }: SuggestedActionsProps) {
-  const initialActions = [
-    {
-      title: 'What are the health benefits of',
-      label: ' cranberry?',
-      action: 'What are the health benefits of cranberry?',
-    },
-    {
-      title: 'What are the major phytochemicals',
-      label: ' in cranberry products?',
-      action: 'What are the major phytochemicals in cranberry products?',
-    },
-    {
-      title: 'What are the typical flavonoids',
-      label: ' in the cranberry supplements?',
-      action: 'What are the typical flavonoids in the cranberry supplements?',
-    },
-    {
-      title: 'What are the typical analytical methods',
-      label: ' for the quality control of cranberry supplements?',
-      action: 'What are the typical analytical methods for the quality control of cranberry supplements?',
-    }
-  ];
+const initialActions = [
+  {
+    title: 'What is the Codex Alimentarius',
+    label: 'definition of dietary fiber?',
+    action: 'What is the Codex Alimentarius definition of dietary fiber?',
+  },
+  {
+    title: 'What are the differences between',
+    label: 'soluble and insoluble dietary fiber?',
+    action: 'What are the differences between soluble and insoluble dietary fiber?',
+  },
+  {
+    title: 'What AOAC methods are used',
+    label: 'to measure total dietary fiber?',
+    action: 'What AOAC methods are used to measure total dietary fiber?',
+  },
+  {
+    title: 'What is resistant starch and',
+    label: 'how is it measured in foods?',
+    action: 'What is resistant starch and how is it measured in foods?',
+  },
+];
 
   // The two follow-up actions shown after a response
   const followUpActions: Array<{ title: string; label: string; action: string }> = [

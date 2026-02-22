@@ -7,145 +7,208 @@ export interface PaperMetadata {
 }
 
 export const PAPER_METADATA: Record<string, PaperMetadata> = {
-  "A Review of Cranberry Use for Preventing Urinary Tract Infections in Older Adults - PubMed.pdf": {
-    filename: "A Review of Cranberry Use for Preventing Urinary Tract Infections in Older Adults - PubMed.pdf",
-    title: "A Review of Cranberry Use for Preventing Urinary Tract Infections in Older Adults",
-    journal: "The Consultant Pharmacist®",
-    year: "2018",
-    doi: "10.4140/TCP.n.2018.450"
-  },
-  "Advising Consumers About Dietary Supplements  Lessons From Cranberry Products.pdf": {
-    filename: "Advising Consumers About Dietary Supplements  Lessons From Cranberry Products.pdf",
-    title: "Advising Consumers About Dietary Supplements: Lessons From Cranberry Products",
-    journal: "Journal Of Dietary Supplements",
-    year: "2009",
-    doi: "10.3109/19390210903280298"
-  },
-  "American cranberries and health benefits – an evolving story of 25 years.pdf": {
-    filename: "American cranberries and health benefits – an evolving story of 25 years.pdf",
-    title: "American cranberries and health benefits – an evolving story of 25 years",
-    journal: "Journal of the Science of Food and Agriculture",
-    year: "2018",
-    doi: "10.1002/jsfa.8882"
-  },
-  "An updated review on chemical compositions  biological capabilities  and clinical benefits of cranberries.pdf": {
-    filename: "An updated review on chemical compositions  biological capabilities  and clinical benefits of cranberries.pdf",
-    title: "An updated review on chemical compositions, biological capabilities, and clinical benefits of cranberries",
-    journal: "Food Bioscience",
-    year: "2023",
-    doi: "10.1016/j.fbio.2023.102877"
-  },
-  "Analyzing Cranberry Bioactive compounds.pdf": {
-    filename: "Analyzing Cranberry Bioactive compounds.pdf",
-    title: "Analyzing Cranberry Bioactive Compounds",
-    journal: "Critical Reviews in Food Science and Nutrition",
-    year: "2010",
-    doi: "10.1080/10408390903042069"
-  },
-  "Beneficial effects of cranberry in the prevention of obesity and related complications Metabolic syndrome and diabetes – A review.pdf": {
-    filename: "Beneficial effects of cranberry in the prevention of obesity and related complications Metabolic syndrome and diabetes – A review.pdf",
-    title: "Beneficial effects of cranberry in the prevention of obesity and related complications: Metabolic syndrome and diabetes – A review",
-    journal: "Journal of Functional Foods",
-    year: "2016",
-    doi: "10.1016/j.jff.2015.11.001"
-  },
-  "Characterization of Flavonols in Cranberry (Vaccinium macrocarpon) Powder _ Journal of Agricultural and Food Chemistry.pdf": {
-    filename: "Characterization of Flavonols in Cranberry (Vaccinium macrocarpon) Powder _ Journal of Agricultural and Food Chemistry.pdf",
-    title: "Characterization of Flavonols in Cranberry (Vaccinium macrocarpon) Powder",
-    journal: "Journal of Agricultural and Food Chemistry",
-    year: "2003",
-    doi: "10.1021/jf034970s"
-  },
-  "Comparison of bioactive potential of cranberry fruit and fruit-based products versus leaves.pdf": {
-    filename: "Comparison of bioactive potential of cranberry fruit and fruit-based products versus leaves.pdf",
-    title: "Comparison of bioactive potential of cranberry fruit and fruit-based products versus leaves",
-    journal: "Journal of Functional Foods",
-    year: "2016",
-    doi: "10.1016/j.jff.2016.01.015"
-  },
-  "Determination of Cranberry Phenolic Metabolites in Rats.pdf": {
-    filename: "Determination of Cranberry Phenolic Metabolites in Rats.pdf",
-    title: "Determination of Cranberry Phenolic Metabolites in Rats by Liquid Chromatography-Tandem Mass Spectrometry",
-    journal: "Journal of Agricultural and Food Chemistry",
-    year: "2011",
-    doi: "10.1021/jf200673h"
-  },
-  "Development of a Thiolysis HPLC Method for the Analysis of Procyanidins in Cranberry Products.pdf": {
-    filename: "Development of a Thiolysis HPLC Method for the Analysis of Procyanidins in Cranberry Products.pdf",
-    title: "Development of a Thiolysis HPLC Method for the Analysis of Procyanidins in Cranberry Products",
-    journal: "Journal of Agricultural and Food Chemistry",
-    year: "2018",
-    doi: "10.1021/acs.jafc.7b04625"
-  },
-  "Discrimination of American Cranberry Cultivars and Assessment of Clonal Heterogeneity Using Microsatellite Markers.pdf": {
-    filename: "Discrimination of American Cranberry Cultivars and Assessment of Clonal Heterogeneity Using Microsatellite Markers.pdf",
-    title: "Discrimination of American Cranberry Cultivars and Assessment of Clonal Heterogeneity Using Microsatellite Markers",
-    journal: "Plant Molecular Biology Reporter",
-    year: "2013",
-    doi: "10.1007/s11105-012-0497-4"
-  },
-  "Nano-liquid chromatography coupled to time-of-flight MS for phenolic profiling_Acasestudyincranberrysyrups.pdf": {
-    filename: "Nano-liquid chromatography coupled to time-of-flight MS for phenolic profiling_Acasestudyincranberrysyrups.pdf",
-    title: "Nano-liquid chromatography coupled to time-of-flight mass spectrometry for phenolic profiling: A case study in cranberry syrups",
-    journal: "Talanta",
-    year: "2015",
-    doi: "10.1016/j.talanta.2014.10.049"
-  },
-  "Proanthocyanidin A2 purification and quantification of American cranberry.pdf": {
-    filename: "Proanthocyanidin A2 purification and quantification of American cranberry.pdf",
-    title: "Proanthocyanidin A2 purification and quantification of American cranberry (Vaccinium macrocarpon Ait.) products",
-    journal: "Journal of Functional Foods",
-    year: "2013",
-    doi: "10.1016/j.jff.2012.09.005"
-  },
-  "Qualitative and Quantitative Composition of Phenolic Compounds in the Fruit of American Cranberry.pdf": {
-    filename: "Qualitative and Quantitative Composition of Phenolic Compounds in the Fruit of American Cranberry.pdf",
-    title: "Development, Validation, and Application of the UPLC-DAD Methodology for the Evaluation of the Qualitative and Quantitative Composition of Phenolic Compounds in the Fruit of American Cranberry (Vaccinium macrocarpon Aiton)",
-    journal: "Molecules",
-    year: "2022",
-    doi: "10.3390/molecules27020467"
-  },
-  "Quantification of cranberry proanthocyanidins by normal phase HPLC using relative response factors.pdf": {
-    filename: "Quantification of cranberry proanthocyanidins by normal phase HPLC using relative response factors.pdf",
-    title: "Quantification of Cranberry Proanthocyanidins by Normal-Phase High-Performance Liquid Chromatography Using Relative Response Factors",
-    journal: "Phytochemical Analysis",
+  "001.pdf": {
+    filename: "001.pdf",
+    title: "Perspective: Whole and Refined Grains and Health—Evidence Supporting \"Make Half Your Grains Whole\"",
+    journal: "Advances in Nutrition",
     year: "2020",
-    doi: "10.1002/pca.2952"
+    doi: "10.1093/advances/nmz114"
   },
-  "Quantifying and characterizing proanthocyanidins in cranberries in relation to urinary tract health.pdf": {
-    filename: "Quantifying and characterizing proanthocyanidins in cranberries in relation to urinary tract health.pdf",
-    title: "Quantifying and characterizing proanthocyanidins in cranberries in relation to urinary tract health",
-    journal: "Analytical and Bioanalytical Chemistry",
-    year: "2013",
-    doi: "10.1007/s00216-013-6750-3"
-  },
-  "UHPLC-Q-Orbitrap-HRMS-based global metabolomics reveal metabolome modifications in plasma of young women after cranberry juice consumption.pdf": {
-    filename: "UHPLC-Q-Orbitrap-HRMS-based global metabolomics reveal metabolome modifications in plasma of young women after cranberry juice consumption.pdf",
-    title: "UHPLC-Q-Orbitrap-HRMS-based global metabolomics reveal metabolome modifications in plasma of young women after cranberry juice consumption",
-    journal: "The Journal of Nutritional Biochemistry",
+  "002.pdf": {
+    filename: "002.pdf",
+    title: "In vivo digestibility of cross-linked phosphorylated (RS4) wheat starch in ileostomy subjects",
+    journal: "Bioactive Carbohydrates and Dietary Fibre",
     year: "2017",
-    doi: "10.1016/j.jnutbio.2017.03.007"
+    doi: "10.1016/j.bcdf.2017.08.002"
   },
-  "Ultrasound-assisted hydrolysis and GC-MS determination of phenolic compounds in cranberry products.pdf": {
-    filename: "Ultrasound-assisted hydrolysis and GC-MS determination of phenolic compounds in cranberry products.pdf",
-    title: "Ultrasound-assisted hydrolysis and gas chromatography–mass spectrometric determination of phenolic compounds in cranberry products",
-    journal: "Food Chemistry",
+  "003.pdf": {
+    filename: "003.pdf",
+    title: "The range of dietary fibre ingredients and a comparison of their technical functionality",
+    journal: "Woodhead Publishing (Book Chapter)",
+    year: "2013",
+    doi: "10.1533/9780857095787.1.96"
+  },
+  "004.pdf": {
+    filename: "004.pdf",
+    title: "Development of an Integrated Total Dietary Fiber Method Consistent with the Codex Alimentarius Definition",
+    journal: "Cereal Foods World",
+    year: "2010",
+    doi: "10.1094/CFW-55-1-0024"
+  },
+  "005.pdf": {
+    filename: "005.pdf",
+    title: "Nutritional characterization and measurement of dietary carbohydrates",
+    journal: "European Journal of Clinical Nutrition",
+    year: "2007",
+    doi: "10.1038/sj.ejcn.1602937"
+  },
+  "006.pdf": {
+    filename: "006.pdf",
+    title: "Quantifying Grain Digestibility of Starch Fractions in Milled Rice",
+    journal: "Methods in Molecular Biology (Chapter 13)",
+    year: "2019",
+    doi: "10.1007/978-1-4939-8914-0_13"
+  },
+  "007.pdf": {
+    filename: "007.pdf",
+    title: "Fiber analysis: Evaluation of screen printing fabric filter bags by three statistical approaches",
+    journal: "Animal Feed Science and Technology",
     year: "2011",
-    doi: "10.1016/j.foodchem.2011.03.066"
+    doi: "10.1016/j.anifeedsci.2011.06.005"
   },
-  "abeywickrama-et-al-2016-phenolics-of-selected-cranberry-genotypes-(vaccinium-macrocarpon-ait-)-and-their-antioxidant.pdf": {
-    filename: "abeywickrama-et-al-2016-phenolics-of-selected-cranberry-genotypes-(vaccinium-macrocarpon-ait-)-and-their-antioxidant.pdf",
-    title: "Phenolics of Selected Cranberry Genotypes (Vaccinium macrocarpon Ait.) and Their Antioxidant Efficacy",
+  "008.pdf": {
+    filename: "008.pdf",
+    title: "Mushroom Dietary Fiber from the Fruiting Body of Pleurotus tuberregium: Fractionation and Structural Elucidation of Nondigestible Cell Wall Components",
     journal: "Journal of Agricultural and Food Chemistry",
-    year: "2016",
-    doi: "10.1021/acs.jafc.6b04291"
+    year: "2014",
+    doi: "10.1021/jf500112j"
   },
-  "ratios of A-type to B-type interflavan bonds in cranberry proanthocyanidins.pdf": {
-    filename: "ratios of A-type to B-type interflavan bonds in cranberry proanthocyanidins.pdf",
-    title: "Deconvolution of matrix-assisted laser desorption/ionization time-of-flight mass spectrometry isotope patterns to determine ratios of A-type to B-type interflavan bonds in cranberry proanthocyanidins",
-    journal: "Food Chemistry",
+  "009.pdf": {
+    filename: "009.pdf",
+    title: "Dietary Fiber Content of Cross-linked Phosphorylated Resistant Starch (RS4) Determined by the Prosky and McCleary Methods",
+    journal: "Cereal Foods World",
+    year: "2013",
+    doi: "10.1094/CFW-58-5-0923"
+  },
+  "010.pdf": {
+    filename: "010.pdf",
+    title: "Determination of Total, Soluble, and Insoluble Dietary Fiber in Foods—Enzymatic-Gravimetric Method, MES-TRIS Buffer: Collaborative Study",
+    journal: "Journal of AOAC International",
+    year: "1992",
+    doi: "10.1093/jaoac/75.3.395"
+  },
+  "011.pdf": {
+    filename: "011.pdf",
+    title: "Determination of Soluble Dietary Fiber in Foods and Food Products: Collaborative Study",
+    journal: "Journal of AOAC International",
+    year: "1994",
+    doi: "10.1093/jaoac/77.3.690"
+  },
+  "012.pdf": {
+    filename: "012.pdf",
+    title: "Modification to AOAC Official Methods 2009.01 and 2011.25 to Allow for Minor Overestimation of Low Molecular Weight Soluble Dietary Fiber in Samples Containing Starch",
+    journal: "Journal of AOAC International",
+    year: "2014",
+    doi: "10.5740/jaoacint.13-406"
+  },
+  "013.pdf": {
+    filename: "013.pdf",
+    title: "Comparison and Assessment of the Difference in Total Dietary Fiber in Cooked Dried Legumes as Determined by Five Methods",
+    journal: "Journal of AOAC International",
+    year: "1994",
+    doi: "10.1093/jaoac/77.5.1197"
+  },
+  "014.pdf": {
+    filename: "014.pdf",
+    title: "New Method for Determining Total Dietary Fiber by Liquid Chromatography",
+    journal: "Journal of AOAC International",
+    year: "2000",
+    doi: "10.1093/jaoac/83.4.1013"
+  },
+  "015.pdf": {
+    filename: "015.pdf",
+    title: "CODEX-aligned dietary fiber definitions help to bridge the 'fiber gap'",
+    journal: "Nutrition Journal",
+    year: "2014",
+    doi: "10.1186/1475-2891-13-34"
+  },
+  "016.pdf": {
+    filename: "016.pdf",
+    title: "Recovery of Resistant Starch by a Classical and a New Assay for Dietary Fiber",
+    journal: "Cereal Chemistry",
+    year: "2013",
+    doi: "10.1094/CCHEM-05-13-0092-VO"
+  },
+  "017.pdf": {
+    filename: "017.pdf",
+    title: "Determination of Insoluble, Soluble, and Total Dietary Fiber in Foods Using a Rapid Integrated Procedure of Enzymatic-Gravimetric-Liquid Chromatography: First Action 2022.01",
+    journal: "Journal of AOAC International",
+    year: "2023",
+    doi: "10.1093/jaoacint/qsac098"
+  },
+  "018.pdf": {
+    filename: "018.pdf",
+    title: "Determination of Total Dietary Fiber (CODEX Definition) by Enzymatic-Gravimetric Method and Liquid Chromatography: Collaborative Study",
+    journal: "Journal of AOAC International",
+    year: "2010",
+    doi: "10.1093/jaoac/93.1.221"
+  },
+  "019.pdf": {
+    filename: "019.pdf",
+    title: "Determination of Insoluble, Soluble, and Total Dietary Fiber (CODEX Definition) by Enzymatic-Gravimetric Method and Liquid Chromatography: Collaborative Study",
+    journal: "Journal of AOAC International",
     year: "2012",
-    doi: "10.1016/j.foodchem.2012.05.102"
+    doi: "10.5740/jaoacint.CS2011_25"
+  },
+  "020.pdf": {
+    filename: "020.pdf",
+    title: "Measurement of Total Dietary Fiber Using AOAC Method 2009.01 (AACC International Approved Method 32-45.01): Evaluation and Updates",
+    journal: "Cereal Chemistry",
+    year: "2013",
+    doi: "10.1094/CCHEM-10-12-0135-FI"
+  },
+  "021.pdf": {
+    filename: "021.pdf",
+    title: "Determination of total dietary fibre and available carbohydrates: A rapid integrated procedure that simulates in vivo digestion",
+    journal: "Starch-Stärke",
+    year: "2015",
+    doi: "10.1002/star.201500017"
+  },
+  "022.pdf": {
+    filename: "022.pdf",
+    title: "Measurement of β-Glucan in Mushrooms and Mycelial Products",
+    journal: "Journal of AOAC International",
+    year: "2016",
+    doi: "10.5740/jaoacint.15-0289"
+  },
+  "023.pdf": {
+    filename: "023.pdf",
+    title: "Determination of Fructan (Inulin, FOS, Levan, and Branched Fructan) in Animal Food (Animal Feed, Pet Food, and Ingredients): Single-Laboratory Validation, First Action 2018.07",
+    journal: "Journal of AOAC International",
+    year: "2019",
+    doi: "10.5740/jaoacint.18-0330"
+  },
+  "024.pdf": {
+    filename: "024.pdf",
+    title: "Total Dietary Fiber (CODEX Definition) in Foods and Food Ingredients by a Rapid Enzymatic-Gravimetric Method and Liquid Chromatography: Collaborative Study, First Action 2017.16",
+    journal: "Journal of AOAC International",
+    year: "2019",
+    doi: "10.5740/jaoacint.18-0180"
+  },
+  "025.pdf": {
+    filename: "025.pdf",
+    title: "Measurement of available carbohydrates, digestible, and resistant starch in food ingredients and products",
+    journal: "Cereal Chemistry",
+    year: "2019",
+    doi: "10.1002/cche.10208"
+  },
+  "026.pdf": {
+    filename: "026.pdf",
+    title: "Measurement of Available Carbohydrates in Cereal and Cereal Products, Dairy Products, Vegetables, Fruit, and Related Food Products and Animal Feeds: First Action 2020.07",
+    journal: "Journal of AOAC International",
+    year: "2021",
+    doi: "10.1093/jaoacint/qsab019"
+  },
+  "027.pdf": {
+    filename: "027.pdf",
+    title: "Measurement of Dietary Fiber: Which AOAC Official Method of AnalysisSM to Use",
+    journal: "Journal of AOAC International",
+    year: "2023",
+    doi: "10.1093/jaoacint/qsad051"
+  },
+  "028.pdf": {
+    filename: "028.pdf",
+    title: "Dietary fiber, starch, and sugars in bananas at different stages of ripeness in the retail market",
+    journal: "PLOS ONE",
+    year: "2021",
+    doi: "10.1371/journal.pone.0253366"
+  },
+  "029.pdf": {
+    filename: "029.pdf",
+    title: "Determination of β-Galactooligosaccharides (GOS) in Infant Formula and Adult Nutritionals: Single-Laboratory Validation, First Action 2021.01",
+    journal: "Journal of AOAC International",
+    year: "2022",
+    doi: "10.1093/jaoacint/qsab095"
   }
 };
 

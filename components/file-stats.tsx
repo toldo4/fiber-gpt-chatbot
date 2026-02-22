@@ -37,9 +37,8 @@ function PureFileStats() {
       .catch(() => setLoading(false));
   }, []);
 
-  const handlePaperClick = (filename: string) => {
-    // Open PDF in new tab
-    window.open(`/docs/${filename}`, '_blank');
+  const handlePaperClick = (doi: string) => {
+    window.open(`https://doi.org/${doi}`, '_blank');
   };
 
   return (
@@ -69,7 +68,7 @@ function PureFileStats() {
               <DropdownMenuItem
                 key={index}
                 className="cursor-pointer flex-col items-start gap-1 py-3 px-3 hover:bg-accent"
-                onClick={() => handlePaperClick(paper.filename)}
+                onClick={() => handlePaperClick(paper.doi)}
               >
                 <div className="flex items-start gap-2 w-full">
                   <div className="shrink-0 mt-0.5">

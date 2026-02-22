@@ -22,7 +22,7 @@ export const maxDuration = 60
 
 // System prompt matching your Express server exactly
 const RAG_SYSTEM_PROMPT = 
-  'You are a cranberry chemistry/analytics assistant. ' +
+  'You are a fiber chemistry/analytics assistant. ' +
   'Use ONLY the provided CONTEXT to answer. If unsure, say so. Keep answers concise. ' +
   'Provide all source citations at the end of your response in a "Sources:" section.'
 

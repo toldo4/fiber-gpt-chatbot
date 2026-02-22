@@ -47,11 +47,11 @@ export const Overview = () => {
           
           <span className="text-3xl text-ohio-green dark:text-white font-bold">+</span>
           
-          {/* Cranberry Logo */}
+          {/* fiber Logo */}
           <div className="relative w-24 h-24 flex items-center justify-center">
             <Image
-              src="/images/cranberry.png"
-              alt="Cranberry Research"
+              src="/images/fiber.png"
+              alt="Fiber Research"
               width={96}
               height={96}
               className="object-contain"
@@ -63,7 +63,7 @@ export const Overview = () => {
         {/* Title */}
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-ohio-green dark:text-white">
-            Cranberry Chatbot
+            Fiber Chatbot
           </h1>
           <p className="text-lg text-ohio-dark dark:text-gray-300">
             Research Assistant powered by Ohio University
@@ -72,7 +72,7 @@ export const Overview = () => {
 
         {/* Optional: Add a subtle description */}
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          Ask questions about cranberry chemistry, analytics, and research. 
+          Ask questions about fiber chemistry, analytics, and research. 
           All answers are grounded in our document corpus.
         </p>
       </div>
