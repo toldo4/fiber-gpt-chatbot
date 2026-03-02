@@ -9,19 +9,20 @@ import {
 import { customModel } from '@/lib/ai'
 import { models } from '@/lib/ai/models'
 import { generateUUID, getMostRecentUserMessage } from '@/lib/utils'
-import { 
-  searchRAG, 
-  buildContext, 
+import {
+  searchRAG,
+  buildContext,
   extractSourceFiles,
-  isCorpusMetaQuestion 
+  isCorpusMetaQuestion
 } from '@/lib/rag/search'
 import { getCorpusStats } from '@/lib/rag/index-loader'
 import { getPaperMetadata, formatPaperCitation } from '@/lib/rag/paper-metadata'
+import { logQA } from '@/lib/logger'
 
 export const maxDuration = 60
 
 // System prompt matching your Express server exactly
-const RAG_SYSTEM_PROMPT = 
+const RAG_SYSTEM_PROMPT =
   'You are a fiber chemistry/analytics assistant. ' +
   'Use ONLY the provided CONTEXT to answer. If unsure, say so. Keep answers concise. ' +
   'Provide all source citations at the end of your response in a "Sources:" section.'
@@ -50,8 +51,8 @@ export async function POST(request: Request) {
   const userMessageId = generateUUID()
 
   // Extract query from user message
-  const query = typeof userMessage.content === 'string' 
-    ? userMessage.content 
+  const query = typeof userMessage.content === 'string'
+    ? userMessage.content
     : userMessage.content.map(c => c.type === 'text' ? c.text : '').join(' ')
 
   return createDataStreamResponse({
@@ -68,14 +69,14 @@ export async function POST(request: Request) {
           const paperList = stats.papers
             .map(paper => `- ${paper.title}\n  Journal: ${paper.journal} (${paper.year})\n  DOI: ${paper.doi}`)
             .join('\n\n')
-          
+
           const response = `There are ${stats.total_documents} research papers indexed.\n\n${paperList}\n`
-          
+
           dataStream.writeData({
             type: 'text',
             content: response
           })
-          
+
           return
         }
 
@@ -96,7 +97,7 @@ export async function POST(request: Request) {
           .join('\n\n')
 
         // Build the prompt with formatted citations
-        const ragPrompt = 
+        const ragPrompt =
           `CONTEXT:\n${context}\n\nQUESTION:\n${query}\n\n` +
           `INSTRUCTIONS:\n- Base your answer only on CONTEXT.\n- Answer the question naturally without inline citations.\n- After your answer, add a "Sources:" section listing all papers you referenced.\n- Format each source as: Title. Journal (Year). DOI: [doi]\n\nAVAILABLE SOURCES:\n${formattedSources}\n`
 
@@ -112,19 +113,27 @@ export async function POST(request: Request) {
             isEnabled: true,
             functionId: 'stream-text-rag',
           },
-          onFinish: async () => {
-            // Append sources with metadata after streaming completes
+          onFinish: async (result) => {
+            const text = result.text
+            
             const sourcesWithMetadata = sourceFilenames.map(filename => {
               const metadata = getPaperMetadata(filename)
               return metadata || { filename }
             })
-            
+
             dataStream.writeData({
               type: 'sources',
-              content: JSON.stringify({ 
+              content: JSON.stringify({
                 files: sourceFilenames,
-                metadata: sourcesWithMetadata 
+                metadata: sourcesWithMetadata
               })
+            })
+
+            logQA({
+              question: query,
+              answer: text,
+              sources: sourceFilenames,
+              modelId: model.apiIdentifier,
             })
           }
         })
@@ -133,7 +142,7 @@ export async function POST(request: Request) {
         result.mergeIntoDataStream(dataStream)
       } catch (error) {
         console.error('RAG error:', error)
-        
+
         dataStream.writeData({
           type: 'error',
           content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
