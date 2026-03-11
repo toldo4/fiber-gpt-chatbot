@@ -1,0 +1,21 @@
+{
+  "name": "rag-index",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "bootstrap-rag.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "glob": "^13.0.6",
+    "openai": "^6.27.0",
+    "pdf-parse": "^2.4.5"
+  }
+}
