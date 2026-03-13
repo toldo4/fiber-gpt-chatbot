@@ -7,8 +7,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://chat.vercel.ai'),
-  title: 'Fiber Chatbot - Ohio University',
-  description: 'Research Assistant Fiber Chatbot powered by Ohio University',
+  title: 'RAG Chatbot - Ohio University',
+  description: 'Research Assistant RAG Chatbot powered by Ohio University',
 };
 
 export const viewport = {
