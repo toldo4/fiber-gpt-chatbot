@@ -21,11 +21,13 @@ import { logQA } from '@/lib/logger'
 
 export const maxDuration = 60
 
-// System prompt matching your Express server exactly
+// Generic RAG assistant system prompt with inline citation support
 const RAG_SYSTEM_PROMPT =
-  'You are a fiber chemistry/analytics assistant. ' +
-  'Use ONLY the provided CONTEXT to answer. If unsure, say so. Keep answers concise. ' +
-  'Provide all source citations at the end of your response in a "Sources:" section.'
+  'You are a research assistant with access to a corpus of academic papers. ' +
+  'Use ONLY the provided CONTEXT to answer questions. If the context does not contain enough information, say so clearly. ' +
+  'When answering, cite your sources inline using numbered brackets like [1], [2], etc., corresponding to the numbered sources listed at the end. ' +
+  'You may cite the same source multiple times. ' +
+  'End every response with a "Sources:" section that lists each cited paper in order, formatted as: [N] Title. Journal (Year). DOI: doi'
 
 export async function POST(request: Request) {
   const {
@@ -85,21 +87,26 @@ export async function POST(request: Request) {
         const context = buildContext(searchResults)
         const sourceFilenames = extractSourceFiles(searchResults)
 
-        // Format sources with full citations
-        const formattedSources = sourceFilenames
-          .map(filename => {
-            const metadata = getPaperMetadata(filename)
-            if (metadata) {
-              return formatPaperCitation(metadata)
-            }
-            return filename
-          })
-          .join('\n\n')
+        // Build numbered source list for inline citation
+        const numberedSources = sourceFilenames.map((filename, index) => {
+          const metadata = getPaperMetadata(filename)
+          const citation = metadata ? formatPaperCitation(metadata) : filename
+          return `[${index + 1}] ${citation}`
+        }).join('\n\n')
 
-        // Build the prompt with formatted citations
+        // Build the prompt instructing the LLM to use numbered inline citations
+        const sourceCount = sourceFilenames.length
         const ragPrompt =
-          `CONTEXT:\n${context}\n\nQUESTION:\n${query}\n\n` +
-          `INSTRUCTIONS:\n- Base your answer only on CONTEXT.\n- Answer the question naturally without inline citations.\n- After your answer, add a "Sources:" section listing all papers you referenced.\n- Format each source as: Title. Journal (Year). DOI: [doi]\n\nAVAILABLE SOURCES:\n${formattedSources}\n`
+          `CONTEXT:\n${context}\n\n` +
+          `QUESTION:\n${query}\n\n` +
+          `AVAILABLE SOURCES (${sourceCount} total, numbered [1] to [${sourceCount}]):\n${numberedSources}\n\n` +
+          `INSTRUCTIONS:\n` +
+          `- Answer using ONLY the information in CONTEXT above.\n` +
+          `- Cite sources inline using [N] notation wherever you reference specific information.\n` +
+          `- CRITICAL: You MUST only use citation numbers that exist in the AVAILABLE SOURCES list above (between [1] and [${sourceCount}]). Do NOT invent or use any citation number outside this range.\n` +
+          `- If only one source exists, only ever cite [1]. If two exist, only cite [1] or [2]. Never cite a number higher than ${sourceCount}.\n` +
+          `- Multiple citations can be used together only if each number exists, e.g. [1][2].\n` +
+          `- At the end of your response, include a "Sources:" section listing only the papers you actually cited.\n`
 
         // Stream the response
         const result = streamText({
@@ -115,7 +122,7 @@ export async function POST(request: Request) {
           },
           onFinish: async (result) => {
             const text = result.text
-            
+
             const sourcesWithMetadata = sourceFilenames.map(filename => {
               const metadata = getPaperMetadata(filename)
               return metadata || { filename }
