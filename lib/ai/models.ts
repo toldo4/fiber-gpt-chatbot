@@ -30,20 +30,20 @@ export const models: Array<Model> = [
     description: 'For complex, multi-step tasks',
     provider: 'openai',
   },
-{
-    id: 'gemini-2.5-pro',
-    label: 'Gemini 2.5 Pro',
-    apiIdentifier: 'gemini-2.5-pro', // Updated to 2.5
-    description: 'Complex reasoning tasks',
-    provider: 'google',
-  },
-  {
-    id: 'gemini-2.5-flash',
-    label: 'Gemini 2.5 Flash',
-    apiIdentifier: 'gemini-2.5-flash', // Updated to 2.5
-    description: 'Fast and versatile performance',
-    provider: 'google',
-  },
+// {
+//     id: 'gemini-2.5-pro',
+//     label: 'Gemini 2.5 Pro',
+//     apiIdentifier: 'gemini-2.5-pro', // Updated to 2.5
+//     description: 'Complex reasoning tasks',
+//     provider: 'google',
+//   },
+//   {
+//     id: 'gemini-2.5-flash',
+//     label: 'Gemini 2.5 Flash',
+//     apiIdentifier: 'gemini-2.5-flash', // Updated to 2.5
+//     description: 'Fast and versatile performance',
+//     provider: 'google',
+//   },
   {
     id: 'gpt-5.1',
     label: 'GPT 5.1',
