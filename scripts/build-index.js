@@ -120,7 +120,7 @@ async function embedBatch(texts) {
     }
 
     // Create parts directory
-    const partsDir = path.join(__dirname, 'index-parts');
+    const partsDir = path.join(__dirname, '../index-parts');
     if (!fs.existsSync(partsDir)) {
       fs.mkdirSync(partsDir);
     }
