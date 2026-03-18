@@ -3,7 +3,8 @@ export interface PaperMetadata {
   title: string;
   journal: string;
   year: string;
-  doi: string;
+  doi?: string;
+  link?: string;
 }
 
 export const PAPER_METADATA: Record<string, PaperMetadata> = {
@@ -209,6 +210,20 @@ export const PAPER_METADATA: Record<string, PaperMetadata> = {
     journal: "Journal of AOAC International",
     year: "2022",
     doi: "10.1093/jaoacint/qsab095"
+  },
+  "030.pdf": {
+    filename: "030.pdf",
+    title: "Nutrition Labeling of Food (21 CFR 101.9)",
+    journal: "U.S. Code of Federal Regulations, Title 21 – Food and Drugs",
+    year: "2026",
+    link: "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-101/subpart-A/section-101.9"
+  },
+  "031.pdf": {
+    filename: "031.pdf",
+    title: "The Declaration of Certain Isolated or Synthetic Non-Digestible Carbohydrates as Dietary Fiber on Nutrition and Supplement Facts Labels: Guidance for Industry",
+    journal: "U.S. Food and Drug Administration (FDA) Guidance for Industry",
+    year: "2018",
+    link: "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/declaration-certain-isolated-or-synthetic-non-digestible-carbohydrates-dietary-fiber-nutrition-and-supplement-facts"
   }
 };
 
@@ -217,5 +232,6 @@ export function getPaperMetadata(filename: string): PaperMetadata | null {
 }
 
 export function formatPaperCitation(metadata: PaperMetadata): string {
-  return `${metadata.title}\nJournal: ${metadata.journal} (${metadata.year})\nDOI: ${metadata.doi}`;
+  const doi = metadata.doi ? `DOI: ${metadata.doi}` : metadata.link ? `Link: ${metadata.link}` : 'No DOI or Link available';
+  return `${metadata.title}\nJournal: ${metadata.journal} (${metadata.year})\n${doi}`;
 }

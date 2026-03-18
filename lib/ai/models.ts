@@ -50,8 +50,21 @@ export const models: Array<Model> = [
     apiIdentifier: 'gpt-5.1',
     description: 'Latest OpenAI model with improved context handling and accuracy.',
     provider: 'openai',
-  }
-
+  },
+  // {
+  //   id: 'gemini-3.1-pro',
+  //   label: 'Gemini 3.1 Pro',
+  //   apiIdentifier: 'gemini-3.1-pro-preview',
+  //   description: 'Advanced intelligence with complex problem-solving skills and powerful reasoning capabilities.',
+  //   provider: 'google',
+  // },
+  // {
+  //   id: 'gemini-3.1-flash-lite',
+  //   label: 'Gemini 3.1 Flash Lite',
+  //   apiIdentifier: 'gemini-3.1-flash-lite-preview',
+  //   description: 'Fast and budget-friendly multimodal model with frontier-class performance.',
+  //   provider: 'google',
+  // },
 ] as const;
 
 export const DEFAULT_MODEL_NAME: string = 'gpt-5.1';

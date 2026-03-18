@@ -27,7 +27,7 @@ const RAG_SYSTEM_PROMPT =
   'Use ONLY the provided CONTEXT to answer questions. If the context does not contain enough information, say so clearly. ' +
   'When answering, cite your sources inline using numbered brackets like [1], [2], etc., corresponding to the numbered sources listed at the end. ' +
   'You may cite the same source multiple times. ' +
-  'End every response with a "Sources:" section that lists each cited paper in order, formatted as: [N] Title. Journal (Year). DOI: doi'
+  'End every response with a "Sources:" section that lists each cited paper in order, formatted as: [N] Title. Journal (Year). DOI/Link: identifier'
 
 export async function POST(request: Request) {
   const {
@@ -69,7 +69,10 @@ export async function POST(request: Request) {
         if (isCorpusMetaQuestion(query)) {
           const stats = getCorpusStats()
           const paperList = stats.papers
-            .map(paper => `- ${paper.title}\n  Journal: ${paper.journal} (${paper.year})\n  DOI: ${paper.doi}`)
+            .map(paper => {
+              const identifier = paper.doi ? `DOI: ${paper.doi}` : paper.link ? `Link: ${paper.link}` : 'No identifier';
+              return `- ${paper.title}\n  Journal: ${paper.journal} (${paper.year})\n  ${identifier}`;
+            })
             .join('\n\n')
 
           const response = `There are ${stats.total_documents} research papers indexed.\n\n${paperList}\n`

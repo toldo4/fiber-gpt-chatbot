@@ -19,6 +19,7 @@ interface PaperInfo {
   journal: string;
   year: string;
   doi: string;
+  link?: string;
 }
 
 function PureFileStats() {
@@ -37,8 +38,12 @@ function PureFileStats() {
       .catch(() => setLoading(false));
   }, []);
 
-  const handlePaperClick = (doi: string) => {
-    window.open(`https://doi.org/${doi}`, '_blank');
+  const handlePaperClick = (paper: PaperInfo) => {
+    if (paper.doi) {
+      window.open(`https://doi.org/${paper.doi}`, '_blank');
+    } else if (paper.link) {
+      window.open(paper.link, '_blank');
+    }
   };
 
   return (
@@ -68,7 +73,7 @@ function PureFileStats() {
               <DropdownMenuItem
                 key={index}
                 className="cursor-pointer flex-col items-start gap-1 py-3 px-3 hover:bg-accent"
-                onClick={() => handlePaperClick(paper.doi)}
+                onClick={() => handlePaperClick(paper)}
               >
                 <div className="flex items-start gap-2 w-full">
                   <div className="shrink-0 mt-0.5">
@@ -84,8 +89,12 @@ function PureFileStats() {
                         {paper.journal} ({paper.year})
                       </div>
                       <div>
-                        <span className="font-medium">DOI:</span>{' '}
-                        <span className="font-mono">{paper.doi}</span>
+                        <span className="font-medium">
+                          {paper.doi ? 'DOI' : 'Link'}:
+                        </span>{' '}
+                        <span className="font-mono">
+                          {paper.doi || paper.link || 'N/A'}
+                        </span>
                       </div>
                     </div>
                   </div>
