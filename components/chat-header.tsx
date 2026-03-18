@@ -29,7 +29,8 @@ function PureChatHeader({
       <SidebarToggle />
       <ThemeToggle />
       <FileStats />
-
+      <ModelSelector selectedModelId={selectedModelId} />
+      
       {(!open || windowWidth < 768) && (
         <Tooltip>
           <TooltipTrigger asChild>

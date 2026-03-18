@@ -156,5 +156,9 @@ export async function POST(request: Request) {
         })
       }
     },
+    onError: (error) => {
+      console.error('Stream error:', error);
+      return error instanceof Error ? error.message : String(error);
+    }
   })
 }

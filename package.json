@@ -12,6 +12,7 @@
     "vercel-deploy": "vercel -t hGAulrATRq2iPLVIKbrInixf --prod"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.43",
     "@ai-sdk/openai": "1.1.5",
     "@codemirror/lang-python": "^6.1.7",
     "@codemirror/state": "^6.5.1",
