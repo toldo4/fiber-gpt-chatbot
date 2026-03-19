@@ -216,14 +216,14 @@ export const PAPER_METADATA: Record<string, PaperMetadata> = {
     title: "Nutrition Labeling of Food (21 CFR 101.9)",
     journal: "U.S. Code of Federal Regulations, Title 21 – Food and Drugs",
     year: "2026",
-    link: "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-101/subpart-A/section-101.9"
+    link: "/api/docs/030.pdf"
   },
   "031.pdf": {
     filename: "031.pdf",
     title: "The Declaration of Certain Isolated or Synthetic Non-Digestible Carbohydrates as Dietary Fiber on Nutrition and Supplement Facts Labels: Guidance for Industry",
     journal: "U.S. Food and Drug Administration (FDA) Guidance for Industry",
     year: "2018",
-    link: "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/declaration-certain-isolated-or-synthetic-non-digestible-carbohydrates-dietary-fiber-nutrition-and-supplement-facts"
+    link: "/api/docs/031.pdf"
   }
 };
 
