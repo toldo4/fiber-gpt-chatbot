@@ -46,7 +46,10 @@ export async function searchRAG(
 
 export function buildContext(results: SearchResult[]): string {
   return results
-    .map((r, i) => `[[Source ${i + 1}: ${r.file}]]\n${r.text}`)
+    .map((r, i) => {
+      const loc = r.section ? `${r.file} — ${r.section}` : r.file
+      return `[[Source ${i + 1}: ${loc}]]\n${r.text}`
+    })
     .join('\n\n')
 }
 

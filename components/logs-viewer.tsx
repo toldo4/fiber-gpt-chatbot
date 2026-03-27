@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 interface RetrievedChunk {
   file: string
   title?: string
+  section?: string
   preview: string
 }
 
@@ -102,18 +103,23 @@ export function LogsViewer() {
                     </p>
                     <div className="space-y-2">
                       {Object.entries(
-                        entry.retrievedChunks.reduce<Record<string, { label: string; previews: string[] }>>((acc, chunk) => {
-                          if (!acc[chunk.file]) acc[chunk.file] = { label: chunk.title ?? chunk.file, previews: [] }
-                          acc[chunk.file].previews.push(chunk.preview)
+                        entry.retrievedChunks.reduce<Record<string, { label: string; chunks: { section?: string; preview: string }[] }>>((acc, chunk) => {
+                          if (!acc[chunk.file]) acc[chunk.file] = { label: chunk.title ?? chunk.file, chunks: [] }
+                          acc[chunk.file].chunks.push({ section: chunk.section, preview: chunk.preview })
                           return acc
                         }, {})
-                      ).map(([file, { label, previews }]) => (
+                      ).map(([file, { label, chunks }]) => (
                         <div key={file} className="border rounded p-2 bg-background">
                           <p className="text-xs font-medium mb-1">{label}</p>
                           <ul className="space-y-1">
-                            {previews.map((preview: string, k: number) => (
+                            {chunks.map((chunk, k: number) => (
                               <li key={k} className="text-xs text-muted-foreground pl-2 border-l-2 border-muted">
-                                {preview}…
+                                {chunk.section && (
+                                  <span className="inline-block text-[10px] font-medium text-foreground/60 bg-muted rounded px-1 py-0.5 mr-1 leading-none">
+                                    {chunk.section}
+                                  </span>
+                                )}
+                                {chunk.preview}…
                               </li>
                             ))}
                           </ul>

@@ -6,6 +6,7 @@ import { getPaperMetadata, type PaperMetadata } from './paper-metadata'
 export interface RagChunk {
   id: string
   file: string
+  section?: string
   text: string
   embedding: number[]
 }

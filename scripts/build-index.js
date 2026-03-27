@@ -45,6 +45,42 @@ function chunkText(text, chunkSize = 1200, overlap = 150) {
   return chunks;
 }
 
+/** Load docling-parsed records from parsed-docs.json, grouped by file+section */
+function loadDoclingChunks() {
+  const parsedPath = path.join(__dirname, 'parsed-docs.json');
+  if (!fs.existsSync(parsedPath)) return null;
+
+  const records = JSON.parse(fs.readFileSync(parsedPath, 'utf8'));
+  // Group text blocks by file → section
+  const grouped = {};
+  for (const { file, section, text } of records) {
+    if (!grouped[file]) grouped[file] = {};
+    if (!grouped[file][section]) grouped[file][section] = [];
+    grouped[file][section].push(text);
+  }
+
+  const chunks = [];
+  for (const file of Object.keys(grouped).sort()) {
+    for (const section of Object.keys(grouped[file])) {
+      const combined = grouped[file][section].join(' ');
+      const textChunks = chunkText(combined);
+      textChunks.forEach((c, idx) => {
+        chunks.push({
+          id: `${file}#${section}#${idx}`,
+          file,
+          section,
+          // Prepend section name to the text used for embedding so retrieval
+          // benefits from the structural context.
+          text: c,
+          embedText: `[${section}] ${c}`,
+        });
+      });
+    }
+    console.log(`  Prepared chunks from ${file} (via docling)`);
+  }
+  return chunks;
+}
+
 /** Read file text for .pdf (if pdf-parse available) and .txt */
 async function readFileText(fp) {
   const ext = path.extname(fp).toLowerCase();
@@ -86,23 +122,27 @@ async function embedBatch(texts) {
       process.exit(0);
     }
 
-    const allChunks = [];
-    for (const fp of files) {
-      const base = path.basename(fp);
-      const raw = await readFileText(fp);
-      if (!raw || !raw.trim()) {
-        console.warn(`(empty or unreadable) ${base} — skipped`);
-        continue;
-      }
-      const chunks = chunkText(raw);
-      chunks.forEach((c, idx) => {
-        allChunks.push({
-          id: `${base}#${idx}`,
-          file: base,
-          text: c
+    // Prefer docling-parsed data (section-aware) over raw pdf-parse
+    let allChunks = loadDoclingChunks();
+
+    if (allChunks) {
+      console.log(`Loaded ${allChunks.length} section-aware chunks from parsed-docs.json`);
+    } else {
+      console.log('No parsed-docs.json found — falling back to pdf-parse');
+      allChunks = [];
+      for (const fp of files) {
+        const base = path.basename(fp);
+        const raw = await readFileText(fp);
+        if (!raw || !raw.trim()) {
+          console.warn(`(empty or unreadable) ${base} — skipped`);
+          continue;
+        }
+        const chunks = chunkText(raw);
+        chunks.forEach((c, idx) => {
+          allChunks.push({ id: `${base}#${idx}`, file: base, text: c });
         });
-      });
-      console.log(`Prepared ${chunks.length} chunks from ${base}`);
+        console.log(`Prepared ${chunks.length} chunks from ${base}`);
+      }
     }
 
     if (allChunks.length === 0) {
@@ -110,12 +150,15 @@ async function embedBatch(texts) {
       process.exit(0);
     }
 
-    // Embed chunks in batches
+    // Embed chunks in batches (use embedText if present, else text)
     const B = 50;
     for (let i = 0; i < allChunks.length; i += B) {
       const batch = allChunks.slice(i, i + B);
-      const vecs = await embedBatch(batch.map(b => b.text));
-      batch.forEach((b, j) => (b.embedding = vecs[j]));
+      const vecs = await embedBatch(batch.map(b => b.embedText ?? b.text));
+      batch.forEach((b, j) => {
+        b.embedding = vecs[j];
+        delete b.embedText; // don't store the augmented text in the index
+      });
       console.log(`Embedded ${Math.min(i + B, allChunks.length)}/${allChunks.length}`);
     }
 

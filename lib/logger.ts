@@ -11,7 +11,7 @@ export function logQA(entry: {
   answer: string
   sources: string[]
   modelId: string
-  retrievedChunks?: { file: string; title?: string; preview: string }[]
+  retrievedChunks?: { file: string; title?: string; section?: string; preview: string }[]
 }) {
   const line = JSON.stringify({
     timestamp: new Date().toISOString(),

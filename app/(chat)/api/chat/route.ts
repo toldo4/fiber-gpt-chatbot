@@ -147,6 +147,7 @@ export async function POST(request: Request) {
               retrievedChunks: searchResults.map(r => ({
                 file: r.file,
                 title: getPaperMetadata(r.file)?.title,
+                section: r.section,
                 preview: r.text.slice(0, 120).replace(/\s+/g, ' ').trim(),
               })),
             })
