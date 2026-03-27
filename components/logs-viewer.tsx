@@ -2,12 +2,19 @@
 
 import { useEffect, useState } from 'react'
 
+interface RetrievedChunk {
+  file: string
+  title?: string
+  preview: string
+}
+
 interface LogEntry {
   timestamp: string
   question: string
   answer: string | object
   sources: string[]
   modelId: string
+  retrievedChunks?: RetrievedChunk[]
 }
 
 function safeAnswer(answer: string | object): string {
@@ -88,7 +95,33 @@ export function LogsViewer() {
                   <p className="text-sm whitespace-pre-wrap">{safeAnswer(entry.answer)}</p>
                 </div>
 
-                {entry.sources?.length > 0 && (
+                {entry.retrievedChunks && entry.retrievedChunks.length > 0 ? (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                      Retrieved Chunks ({entry.retrievedChunks.length})
+                    </p>
+                    <div className="space-y-2">
+                      {Object.entries(
+                        entry.retrievedChunks.reduce<Record<string, { label: string; previews: string[] }>>((acc, chunk) => {
+                          if (!acc[chunk.file]) acc[chunk.file] = { label: chunk.title ?? chunk.file, previews: [] }
+                          acc[chunk.file].previews.push(chunk.preview)
+                          return acc
+                        }, {})
+                      ).map(([file, { label, previews }]) => (
+                        <div key={file} className="border rounded p-2 bg-background">
+                          <p className="text-xs font-medium mb-1">{label}</p>
+                          <ul className="space-y-1">
+                            {previews.map((preview: string, k: number) => (
+                              <li key={k} className="text-xs text-muted-foreground pl-2 border-l-2 border-muted">
+                                {preview}…
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : entry.sources?.length > 0 && (
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Sources</p>
                     <ul className="space-y-0.5">

@@ -144,6 +144,11 @@ export async function POST(request: Request) {
               answer: text,
               sources: sourceFilenames,
               modelId: model.apiIdentifier,
+              retrievedChunks: searchResults.map(r => ({
+                file: r.file,
+                title: getPaperMetadata(r.file)?.title,
+                preview: r.text.slice(0, 120).replace(/\s+/g, ' ').trim(),
+              })),
             })
           }
         })
