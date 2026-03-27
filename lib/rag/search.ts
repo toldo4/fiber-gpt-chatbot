@@ -5,6 +5,7 @@ import { loadSplitIndex, type RagChunk } from './index-loader'
 
 export interface SearchResult extends RagChunk {
   score: number
+  section: string
 }
 
 function cosine(a: number[], b: number[]): number {

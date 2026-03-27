@@ -25,6 +25,7 @@ export const maxDuration = 60
 const RAG_SYSTEM_PROMPT =
   'You are a research assistant with access to a corpus of academic papers. ' +
   'Use ONLY the provided CONTEXT to answer questions. If the context does not contain enough information, say so clearly. ' +
+  'Do NOT draw on or reference introductory sections of papers — focus exclusively on methods, results, discussion, and conclusions. ' +
   'When answering, cite your sources inline using numbered brackets like [1], [2], etc., corresponding to the numbered sources listed at the end. ' +
   'You may cite the same source multiple times. ' +
   'End every response with a "Sources:" section that lists each cited paper in order, formatted as: [N] Title. Journal (Year). DOI: doi'
@@ -102,6 +103,7 @@ export async function POST(request: Request) {
           `AVAILABLE SOURCES (${sourceCount} total, numbered [1] to [${sourceCount}]):\n${numberedSources}\n\n` +
           `INSTRUCTIONS:\n` +
           `- Answer using ONLY the information in CONTEXT above.\n` +
+          `- Ignore any content that appears to come from an introduction section (background motivation, problem overview, paper structure outlines).\n` + // ← new line
           `- Cite sources inline using [N] notation wherever you reference specific information.\n` +
           `- CRITICAL: You MUST only use citation numbers that exist in the AVAILABLE SOURCES list above (between [1] and [${sourceCount}]). Do NOT invent or use any citation number outside this range.\n` +
           `- If only one source exists, only ever cite [1]. If two exist, only cite [1] or [2]. Never cite a number higher than ${sourceCount}.\n` +

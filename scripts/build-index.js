@@ -45,6 +45,53 @@ function chunkText(text, chunkSize = 1200, overlap = 150) {
   return chunks;
 }
 
+function stripIntroSection(text) {
+  if (!text) return text;
+
+  const introPatterns = [
+    /\b(1\.?\s+)?introduction\b/i,
+    /\bintroductory\s+section\b/i,
+  ];
+
+  const nextSectionPatterns = [
+    /\n\s*(2\.?\s+|ii\.?\s+)?(methods?|methodology|materials?\s+and\s+methods?|background|related\s+work|literature\s+review|preliminaries|problem\s+statement|theoretical\s+framework)\b/i,
+  ];
+
+  let introStart = -1;
+  let introHeadingEnd = -1;
+
+  for (const pattern of introPatterns) {
+    const match = pattern.exec(text);
+    if (match) {
+      introStart = match.index;
+      introHeadingEnd = match.index + match[0].length;
+      break;
+    }
+  }
+
+  if (introStart === -1) return text;
+
+  let introEnd = -1;
+  const textAfterIntro = text.slice(introHeadingEnd);
+
+  for (const pattern of nextSectionPatterns) {
+    const match = pattern.exec(textAfterIntro);
+    if (match) {
+      introEnd = introHeadingEnd + match.index;
+      break;
+    }
+  }
+
+  if (introEnd === -1) {
+    introEnd = Math.min(introHeadingEnd + 1500, text.length);
+    console.warn(`  ⚠️  Could not find end of introduction — trimming first ${introEnd - introStart} chars`);
+  }
+
+  const before = text.slice(0, introStart).trim();
+  const after = text.slice(introEnd).trim();
+  return (before + '\n\n' + after).trim();
+}
+
 /** Read file text for .pdf (if pdf-parse available) and .txt */
 async function readFileText(fp) {
   const ext = path.extname(fp).toLowerCase();
@@ -94,7 +141,13 @@ async function embedBatch(texts) {
         console.warn(`(empty or unreadable) ${base} — skipped`);
         continue;
       }
-      const chunks = chunkText(raw);
+
+      const filtered = stripIntroSection(raw);
+      if (filtered.length < raw.length) {
+        console.log(`  Stripped introduction from ${base} (~${raw.length - filtered.length} chars removed)`);
+      }
+
+      const chunks = chunkText(filtered);
       chunks.forEach((c, idx) => {
         allChunks.push({
           id: `${base}#${idx}`,
@@ -136,7 +189,7 @@ async function embedBatch(texts) {
       const start = i * chunkSize;
       const end = Math.min(start + chunkSize, totalChunks);
       const partChunks = allChunks.slice(start, end);
-      
+
       const part = {
         part: i + 1,
         total_parts: PARTS,
@@ -144,10 +197,10 @@ async function embedBatch(texts) {
         model: 'text-embedding-3-small',
         chunks: partChunks
       };
-      
+
       const partPath = path.join(partsDir, `index-part-${i + 1}.json`);
       fs.writeFileSync(partPath, JSON.stringify(part, null, 2));
-      
+
       const sizeMB = (fs.statSync(partPath).size / (1024 * 1024)).toFixed(2);
       console.log(` Part ${i + 1}/${PARTS}: ${partChunks.length} chunks (${sizeMB} MB)`);
     }
