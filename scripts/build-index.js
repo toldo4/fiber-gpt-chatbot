@@ -38,6 +38,7 @@ function chunkText(text, chunkSize = 1200, overlap = 150) {
     }
 
     if (slice.length > 0) chunks.push(slice);
+    if (end >= clean.length) break;
     const step = Math.max(1, (end - start) - overlap);
     start = start + step;
   }
