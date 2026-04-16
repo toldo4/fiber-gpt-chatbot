@@ -70,23 +70,50 @@ export function loadSplitIndex(forceReload = false): RagIndex {
   return indexCache
 }
 
+export interface SectionInfo {
+  name: string
+  blocks: number
+}
+
+export interface PaperStats {
+  filename: string
+  totalBlocks: number
+  sections: SectionInfo[]
+}
+
 export function getCorpusStats() {
   const index = loadSplitIndex()
   const files = [...new Set(index.chunks.map(c => c.file))].sort()
-  
+
   // Get paper metadata for each file
   const papers = files
     .map(filename => getPaperMetadata(filename))
     .filter((metadata): metadata is PaperMetadata => metadata !== null)
-  
+
+  // Build per-file section/block breakdown
+  const paperStats: PaperStats[] = files.map(filename => {
+    const fileChunks = index.chunks.filter(c => c.file === filename)
+    const sectionMap = new Map<string, number>()
+    for (const chunk of fileChunks) {
+      const sec = chunk.section ?? 'General'
+      sectionMap.set(sec, (sectionMap.get(sec) ?? 0) + 1)
+    }
+    return {
+      filename,
+      totalBlocks: fileChunks.length,
+      sections: Array.from(sectionMap.entries()).map(([name, blocks]) => ({ name, blocks })),
+    }
+  })
+
   return {
     total_documents: files.length,
     total_chunks: index.chunks.length,
     filenames: files,
     papers: papers,
+    paperStats: paperStats,
     index_created: index.created_at,
-    cache_age_seconds: indexLoadTime 
-      ? Math.floor((Date.now() - indexLoadTime) / 1000) 
+    cache_age_seconds: indexLoadTime
+      ? Math.floor((Date.now() - indexLoadTime) / 1000)
       : 0
   }
 }

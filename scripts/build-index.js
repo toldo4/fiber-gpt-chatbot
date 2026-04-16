@@ -189,7 +189,7 @@ async function embedBatch(texts) {
       };
       
       const partPath = path.join(partsDir, `index-part-${i + 1}.json`);
-      fs.writeFileSync(partPath, JSON.stringify(part, null, 2));
+      fs.writeFileSync(partPath, JSON.stringify(part));
       
       const sizeMB = (fs.statSync(partPath).size / (1024 * 1024)).toFixed(2);
       console.log(` Part ${i + 1}/${PARTS}: ${partChunks.length} chunks (${sizeMB} MB)`);

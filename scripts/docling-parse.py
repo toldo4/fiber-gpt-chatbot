@@ -84,7 +84,7 @@ def main() -> None:
 
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = False            # skip OCR — faster for text-based PDFs
-    pipeline_options.do_table_structure = True  # keep table text
+    pipeline_options.do_table_structure = False  # keep table text
 
     converter = DocumentConverter(
         format_options={
