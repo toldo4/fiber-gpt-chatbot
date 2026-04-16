@@ -94,7 +94,7 @@ export async function POST(request: Request) {
           const fileIndex = sourceFilenames.indexOf(r.file) + 1
           const rawSection: string = (r as any).section ?? 'General'
           const section = rawSection.length > 40 ? rawSection.slice(0, 37).trimEnd() + '...' : rawSection
-          return `[${section}]\n${r.text}`
+          return `[Source ${fileIndex}][${section}]\n${r.text}`
         }).join('\n\n')
 
         // Build numbered source list for inline citation
