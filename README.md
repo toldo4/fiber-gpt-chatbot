@@ -48,11 +48,12 @@ First, add your ```OPENAI_API_KEY``` to .env.local:
 
 Run the development server:
 
-```bash
-# get bun https://bun.sh
-
-bun install
-bun dev
-```
 
 Your app template should now be running on [localhost:3000](http://localhost:3000/).
+
+
+
+```bash
+ scp -r ou-flexday:/home/mansour/fiber-gpt-chatbot/index-parts botanical-aws:/home/ec2-user/fiber-gpt-chatbot/
+
+```
