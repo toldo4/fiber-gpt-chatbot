@@ -113,6 +113,7 @@ export async function POST(request: Request) {
           `INSTRUCTIONS:\n` +
           `- Answer using ONLY the information in CONTEXT above.\n` +
           `- Give less weight to content from Introduction sections, which tend to be general background. Prefer specific findings from Methods, Results, and Discussion sections.\n` +
+          `- Try to be as concise as possible while still answering the question fully. Avoid unnecessary elaboration or repetition.\n` +
           `- Cite sources inline using the format [N][Section], where N is the source number and Section is the section name from the context header (e.g. [Methods]). Example: [2][Methods], [1][Results].\n` +
           `- CRITICAL: You MUST only use citation numbers that exist in the AVAILABLE SOURCES list above (between [1] and [${sourceCount}]). Do NOT invent or use any citation number outside this range.\n` +
           `- If only one source exists, only ever cite [1]. If two exist, only cite [1] or [2]. Never cite a number higher than ${sourceCount}.\n` +
