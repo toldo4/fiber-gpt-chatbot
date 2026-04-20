@@ -178,6 +178,13 @@
   }
 }
 
+/* Inline citation brackets [N] and [Section][N] */
+@layer utilities {
+  .ohio-citation {
+    @apply text-ohio-marigold dark:text-ohio-moss font-medium;
+  }
+}
+
 /* Custom scrollbar styling */
 @layer utilities {
   .scrollbar-ohio::-webkit-scrollbar {

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { memo } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { SKIP, visit } from 'unist-util-visit';
 import { CodeBlock } from './code-block';
 
 const components: Components = {
@@ -98,11 +99,41 @@ const components: Components = {
   },
 };
 
+// Matches [Section][N] (e.g. [Methods][2]) or standalone [N] inline citations
+const CITATION_RE = /(\[[^\]]+\]\[\d+\]|\[\d+\])/;
+
+const rehypeCitations = () => (tree: any) => {
+  visit(tree, 'text', (node: any, index: number | undefined, parent: any) => {
+    if (index == null || !parent) return;
+    if (parent.properties?.className?.includes('ohio-citation')) return;
+
+    const parts = node.value.split(CITATION_RE);
+    if (parts.length <= 1) return;
+
+    const children = parts.flatMap((part: string) => {
+      if (!part) return [];
+      if (CITATION_RE.test(part)) {
+        return [{
+          type: 'element',
+          tagName: 'span',
+          properties: { className: ['ohio-citation'] },
+          children: [{ type: 'text', value: part }],
+        }];
+      }
+      return [{ type: 'text', value: part }];
+    });
+
+    parent.children.splice(index, 1, ...children);
+    return [SKIP, index + children.length] as any;
+  });
+};
+
 const remarkPlugins = [remarkGfm];
+const rehypePlugins = [rehypeCitations];
 
 const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   return (
-    <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
+    <ReactMarkdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} components={components}>
       {children}
     </ReactMarkdown>
   );

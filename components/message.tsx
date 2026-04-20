@@ -92,7 +92,24 @@ const PurePreviewMessage = ({
                       </strong>
                     </p>
                   )}
-                  <Markdown>{message.content}</Markdown>
+                  {(() => {
+                    const content = message.content as string;
+                    const sourcesMatch = content.match(/\n(#{1,3}\s+Sources?|Sources?)\s*:/i);
+                    if (sourcesMatch && sourcesMatch.index !== undefined) {
+                      const splitIndex = sourcesMatch.index;
+                      const mainContent = content.slice(0, splitIndex);
+                      const sourcesContent = content.slice(splitIndex);
+                      return (
+                        <>
+                          <Markdown>{mainContent}</Markdown>
+                          <div className="text-ohio-putnam dark:text-ohio-sycamore text-sm border-t border-ohio-putnam/25 dark:border-ohio-sycamore/25 pt-2 mt-2">
+                            <Markdown>{sourcesContent}</Markdown>
+                          </div>
+                        </>
+                      );
+                    }
+                    return <Markdown>{content}</Markdown>;
+                  })()}
                 </div>
               </div>
             )}

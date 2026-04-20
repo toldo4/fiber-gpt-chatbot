@@ -19,6 +19,13 @@ const config: Config = {
             dark: '#024230',      // Under the Elms (accent)
           },
           white: '#FFFFFF',       // Cupola White
+          putnam: '#756E65',      // Putnam - warm stone gray
+          trillium: '#F9F7ED',    // Trillium White - warm off-white
+          sycamore: '#E7ECC3',    // Sycamore - light sage
+          marigold: '#AA8A00',    // Marigold - golden
+          teal: '#B5E3D8',        // Teal - light teal
+          moss: '#A4D65E',        // Moss - bright green
+          rust: '#FA4616',        // Rust - orange-red
         },
         
         // shadcn/ui theme colors mapped to Ohio branding
