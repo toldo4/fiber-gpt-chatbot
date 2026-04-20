@@ -99,11 +99,14 @@ const PurePreviewMessage = ({
                       const splitIndex = sourcesMatch.index;
                       const mainContent = content.slice(0, splitIndex);
                       const sourcesContent = content.slice(splitIndex);
+                      const linkedSources = sourcesContent
+                        .replace(/DOI:\s*([\w./\-]+)/g, (_: string, doi: string) => `[DOI: ${doi}](https://doi.org/${doi})`)
+                        .replace(/Link:\s*(\S+)/g, (_: string, url: string) => `[Link: ${url}](${url})`);
                       return (
                         <>
                           <Markdown>{mainContent}</Markdown>
-                          <div className="text-ohio-putnam dark:text-ohio-sycamore text-sm border-t border-ohio-putnam/25 dark:border-ohio-sycamore/25 pt-2 mt-2">
-                            <Markdown>{sourcesContent}</Markdown>
+                          <div className="text-primary text-sm border-t border-primary/25 pt-2 mt-2">
+                            <Markdown>{linkedSources}</Markdown>
                           </div>
                         </>
                       );
