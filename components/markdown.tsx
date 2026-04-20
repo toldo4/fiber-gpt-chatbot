@@ -100,26 +100,31 @@ const components: Components = {
 };
 
 // Matches [Section][N] (e.g. [Methods][2]) or standalone [N] inline citations
-const CITATION_RE = /(\[[^\]]+\]\[\d+\]|\[\d+\])/;
+const CITATION_RE = /(\[\d+\]\[[^\]]+\]|\[\d+\])/;
+const NUM_SECTION_RE = /^(\[\d+\])(\[[^\]]+\])$/;
+
+function citationNodes(match: string) {
+  const parts = match.match(NUM_SECTION_RE);
+  if (parts) {
+    return [
+      { type: 'element', tagName: 'span', properties: { className: ['ohio-citation-num'] }, children: [{ type: 'text', value: parts[1] }] },
+      { type: 'element', tagName: 'span', properties: { className: ['ohio-citation-text'] }, children: [{ type: 'text', value: parts[2] }] },
+    ];
+  }
+  return [{ type: 'element', tagName: 'span', properties: { className: ['ohio-citation-num'] }, children: [{ type: 'text', value: match }] }];
+}
 
 const rehypeCitations = () => (tree: any) => {
   visit(tree, 'text', (node: any, index: number | undefined, parent: any) => {
     if (index == null || !parent) return;
-    if (parent.properties?.className?.includes('ohio-citation')) return;
+    if (parent.properties?.className?.some((c: string) => c.startsWith('ohio-citation'))) return;
 
     const parts = node.value.split(CITATION_RE);
     if (parts.length <= 1) return;
 
     const children = parts.flatMap((part: string) => {
       if (!part) return [];
-      if (CITATION_RE.test(part)) {
-        return [{
-          type: 'element',
-          tagName: 'span',
-          properties: { className: ['ohio-citation'] },
-          children: [{ type: 'text', value: part }],
-        }];
-      }
+      if (CITATION_RE.test(part)) return citationNodes(part);
       return [{ type: 'text', value: part }];
     });
 

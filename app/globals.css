@@ -180,8 +180,13 @@
 
 /* Inline citation brackets [N] and [Section][N] */
 @layer utilities {
-  .ohio-citation {
-    @apply text-ohio-marigold dark:text-ohio-moss font-medium;
+  .ohio-citation-text {
+    color: hsl(var(--primary));
+    font-weight: 500;
+  }
+
+  .ohio-citation-num {
+    @apply text-ohio-marigold dark:text-ohio-rust font-medium;
   }
 }
 
