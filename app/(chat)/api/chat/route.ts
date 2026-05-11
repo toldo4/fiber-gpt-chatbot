@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     ? userMessage.content
     : userMessage.content.map(c => c.type === 'text' ? c.text : '').join(' ')
 
-  return createDataStreamResponse({
+  const streamResponse = createDataStreamResponse({
     execute: async (dataStream) => {
       dataStream.writeData({
         type: 'user-message-id',
@@ -163,7 +163,6 @@ export async function POST(request: Request) {
         })
 
         result.mergeIntoDataStream(dataStream)
-        await result.text
       } catch (error) {
         console.error('RAG error:', error)
 
@@ -177,5 +176,14 @@ export async function POST(request: Request) {
       console.error('Stream error:', error);
       return error instanceof Error ? error.message : String(error);
     }
+  })
+
+  return new Response(streamResponse.body, {
+    status: streamResponse.status,
+    headers: {
+      ...Object.fromEntries(streamResponse.headers.entries()),
+      'X-Accel-Buffering': 'no',
+      'Cache-Control': 'no-cache, no-transform',
+    },
   })
 }
