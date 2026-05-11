@@ -2,7 +2,6 @@ import {
   type Message,
   convertToCoreMessages,
   createDataStreamResponse,
-  smoothStream,
   streamText,
 } from 'ai'
 
@@ -128,7 +127,6 @@ export async function POST(request: Request) {
           messages: [
             { role: 'user', content: ragPrompt }
           ],
-          experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_telemetry: {
             isEnabled: true,
             functionId: 'stream-text-rag',
@@ -164,8 +162,8 @@ export async function POST(request: Request) {
           }
         })
 
-        // Merge the stream into data stream
         result.mergeIntoDataStream(dataStream)
+        await result.text
       } catch (error) {
         console.error('RAG error:', error)
 
