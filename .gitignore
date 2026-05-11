@@ -42,3 +42,5 @@ yarn-error.log*
 
 index-parts/
 scripts/parsed-docs.json
+scripts/__pycache__/
+
