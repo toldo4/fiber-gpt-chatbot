@@ -123,6 +123,7 @@ export async function POST(request: Request) {
         // Stream the response
         const result = streamText({
           model: customModel(model.apiIdentifier),
+          ...(model.temperature !== undefined ? { temperature: model.temperature } : {}),
           system: RAG_SYSTEM_PROMPT,
           messages: [
             { role: 'user', content: ragPrompt }

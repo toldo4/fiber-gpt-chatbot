@@ -6,6 +6,7 @@ export interface Model {
   apiIdentifier: string;
   description: string;
   provider: 'openai' | 'google';
+  temperature?: number;
 }
 
 export const models: Array<Model> = [
@@ -44,6 +45,14 @@ export const models: Array<Model> = [
 //     description: 'Fast and versatile performance',
 //     provider: 'google',
 //   },
+  {
+    id: 'gpt-5.5-2026-04-23',
+    label: 'GPT 5.5',
+    apiIdentifier: 'gpt-5.5-2026-04-23',
+    description: '',
+    provider: 'openai',
+    temperature: 1,
+  },
   {
     id: 'gpt-5.1',
     label: 'GPT 5.1',
