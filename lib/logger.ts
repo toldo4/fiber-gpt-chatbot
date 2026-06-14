@@ -15,6 +15,24 @@ export function logQA(entry: {
 }) {
   const line = JSON.stringify({
     timestamp: new Date().toISOString(),
+    type: 'qa',
+    ...entry,
+  })
+
+  const logFile = getLogFile()
+  fs.mkdirSync(path.dirname(logFile), { recursive: true })
+  fs.appendFileSync(logFile, line + '\n', 'utf8')
+}
+
+export function logFeedback(entry: {
+  messageId: string
+  chatId: string
+  rating: 'up' | 'down'
+  messagePreview: string
+}) {
+  const line = JSON.stringify({
+    timestamp: new Date().toISOString(),
+    type: 'feedback',
     ...entry,
   })
 
