@@ -6,6 +6,12 @@ import { memo } from 'react';
 
 import { Button } from './ui/button';
 
+interface SuggestedAction {
+  title: string;
+  label: string;
+  action: string;
+}
+
 interface SuggestedActionsProps {
   chatId: string;
   append: (
@@ -13,9 +19,10 @@ interface SuggestedActionsProps {
     chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
   isFollowUp?: boolean;
+  followUpActions?: SuggestedAction[];
 }
 
-function PureSuggestedActions({ chatId, append, isFollowUp }: SuggestedActionsProps) {
+function PureSuggestedActions({ chatId, append, isFollowUp, followUpActions: followUpActionsProp }: SuggestedActionsProps) {
 const initialActions = [
   {
     title: 'What is the Codex Alimentarius',
@@ -39,24 +46,10 @@ const initialActions = [
   },
 ];
 
-  // The two follow-up actions shown after a response
-  const followUpActions: Array<{ title: string; label: string; action: string }> = [
-    // {
-    //   title: 'Tell me more',
-    //   label: ' about the research methodology.',
-    //   action: 'Can you tell me more about the research methodology used in these studies?',
-    // },
-    // {
-    //   title: 'Are there any',
-    //   label: ' safety concerns or interactions?',
-    //   action: 'What are the safety concerns or potential drug interactions for these supplements?',
-    // },
-  ];
-
-  const actions = isFollowUp ? followUpActions : initialActions;
+  const actions = isFollowUp ? (followUpActionsProp ?? []) : initialActions;
 
   // Don't render if follow-up actions are empty
-  if (isFollowUp && followUpActions.length === 0) {
+  if (isFollowUp && (followUpActionsProp ?? []).length === 0) {
     return null;
   }
 
@@ -95,6 +88,9 @@ const initialActions = [
 }
 
 export const SuggestedActions = memo(
-  PureSuggestedActions, 
-  (prev, next) => prev.isFollowUp === next.isFollowUp && prev.chatId === next.chatId
+  PureSuggestedActions,
+  (prev, next) =>
+    prev.isFollowUp === next.isFollowUp &&
+    prev.chatId === next.chatId &&
+    prev.followUpActions === next.followUpActions,
 );

@@ -2,6 +2,7 @@ import {
   type Message,
   convertToCoreMessages,
   createDataStreamResponse,
+  generateText,
   streamText,
 } from 'ai'
 
@@ -159,6 +160,28 @@ export async function POST(request: Request) {
                 preview: r.text.slice(0, 120).replace(/\s+/g, ' ').trim(),
               })),
             })
+
+            try {
+              const suggestionsResult = await generateText({
+                model: customModel('gpt-4.1-mini'),
+                prompt:
+                  `You are a dietary fiber research assistant. Based on this Q&A, suggest 2 concise follow-up questions a researcher might ask next.\n\n` +
+                  `QUESTION: ${query}\n\n` +
+                  `ANSWER (excerpt): ${text.slice(0, 800)}\n\n` +
+                  `Return ONLY a valid JSON array with exactly 2 objects, no other text:\n` +
+                  `[{"title":"first 3-5 words","label":"rest of question","action":"full question text"},...]`,
+              })
+
+              const suggestions = JSON.parse(suggestionsResult.text.trim())
+              if (Array.isArray(suggestions) && suggestions.length > 0) {
+                dataStream.writeData({
+                  type: 'suggestions',
+                  content: JSON.stringify(suggestions),
+                })
+              }
+            } catch {
+              // suggestions are non-critical, silently skip on error
+            }
           }
         })
 
