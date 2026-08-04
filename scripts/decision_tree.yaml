@@ -1,20 +1,147 @@
 id: aoac_method_selector
-version: "1.0"
+version: "2.0"
 start: targeted_methods
 
-# Attribute keys that are reused across nodes (same question, same cache entry):
-#   needs_idf_sdf_separate   — user/lab requirement, path-independent
-#   ndo_in_product_and_definition — product property, same in cooked & raw branches
+# Extractions scoring below this confidence are treated as "unknown" and, where
+# the caller allows it, escalated into a direct question to the user rather than
+# silently routed down a default branch.
+min_confidence: 0.55
+
+# ── Attributes ────────────────────────────────────────────────────────────────
+#
+# Attributes are declared once and referenced by nodes, so the four IDF/SDF
+# questions share a single definition and a single extraction.
+#
+# `source` says who can actually answer the question:
+#   product  — a property of the sample; infer from the product description,
+#              fall back to asking the user.
+#   corpus   — a scientific/analytical question; answer from the RAG corpus,
+#              fall back to asking the user.
+#   user     — a property of the customer's obligations or jurisdiction. Not
+#              inferable from a product description at all; always ask.
+#
+# Every attribute needs an `ask` (the wording shown to a human) and a `why`
+# (what the answer changes), because any attribute can end up being asked.
+
+attributes:
+
+  targeted_methods_measurable:
+    question: "Can all the fibres in your product be measured using targeted methods?"
+    type: boolean
+    source: corpus
+    extraction_prompt: >
+      Can all dietary fibres present in this product be measured and quantified
+      using specific targeted analytical methods (for example enzymatic assays
+      or HPLC for individual fibre components), rather than requiring a
+      gravimetric total dietary fibre method?
+    retrieval_query: >
+      targeted analytical methods for individual dietary fibre components,
+      HPLC and specific enzymatic assays versus gravimetric total dietary fibre
+    ask: >
+      Are all the fibre components in your product known and individually
+      measurable with targeted methods (e.g. a specific assay per fibre)?
+    why: >
+      If every fibre present has its own validated assay, summing targeted
+      results is more accurate than any gravimetric total-fibre method.
+
+  fibre_content_g_per_100g:
+    question: "What is the expected total dietary fibre content, in g/100 g?"
+    type: numeric
+    source: product
+    extraction_prompt: >
+      What is the expected total dietary fibre content of this product in grams
+      per 100 g? Give a single number. If the product description does not state
+      it and the scientific context does not give a reliable typical value for
+      this food, return null.
+    retrieval_query: >
+      typical total dietary fibre content g/100g reported values for this food category
+    ask: "Roughly what total dietary fibre content do you expect, in g/100 g?"
+    why: >
+      Below about 0.5 g/100 g the established fibre methods are at or under
+      their limit of quantification, so the analysis is not meaningful.
+
+  requires_cooking:
+    question: "Should the product be cooked before consumption?"
+    type: boolean
+    source: product
+    extraction_prompt: >
+      Is this product intended to be cooked or heat-treated before consumption
+      (for example boiled, baked, or fried)? Products sold ready-to-eat, and
+      products that only need reheating for palatability rather than to make
+      them edible, count as not requiring cooking.
+    retrieval_query: >
+      effect of cooking and heat treatment on dietary fibre and resistant starch
+      measurement, sample preparation for cooked versus raw foods
+    ask: "Does the product have to be cooked before it is eaten?"
+    why: >
+      Cooking changes the resistant starch fraction, so the sample must be
+      analysed in the state in which it is consumed.
+
+  contains_ndo:
+    question: "Does the product contain non-digestible oligosaccharides (NDO)?"
+    type: boolean
+    source: product
+    extraction_prompt: >
+      Does this product contain non-digestible oligosaccharides (NDO) such as
+      FOS, GOS, inulin, polydextrose, or resistant maltodextrin — either as an
+      added ingredient or naturally present in a meaningful amount?
+    retrieval_query: >
+      non-digestible oligosaccharides FOS GOS inulin polydextrose in foods,
+      low molecular weight soluble dietary fibre recovery
+    ask: "Does the product contain NDO (FOS, GOS, inulin, polydextrose, resistant maltodextrin)?"
+    why: >
+      NDO are soluble in aqueous ethanol and are lost by the older gravimetric
+      methods, so capturing them requires a method with an LMWSDF step.
+
+  ndo_in_fibre_definition:
+    question: "Do NDO count as dietary fibre under the definition that applies to you?"
+    type: boolean
+    source: user
+    ask: >
+      In the regulatory fibre definition that applies to your market, do
+      non-digestible oligosaccharides count as dietary fibre?
+    why: >
+      Definitions differ by jurisdiction. If NDO are excluded from your
+      definition there is no reason to pay for a method that captures them.
+
+  contains_resistant_starch:
+    question: "Does the sample contain resistant starch (RS)?"
+    type: boolean
+    source: product
+    extraction_prompt: >
+      Does this product contain resistant starch (RS)? Sources include legumes,
+      unripe bananas, cooked-then-cooled potato or pasta, high-amylose starches,
+      and chemically modified RS4 starches.
+    retrieval_query: >
+      resistant starch content of legumes bananas cooled cooked starch,
+      resistant starch recovery in dietary fibre methods
+    ask: "Does the product contain resistant starch?"
+    why: >
+      RS is only recovered correctly by methods whose digestion step matches
+      physiological conditions; the older methods over- or under-count it.
+
+  needs_idf_sdf_separate:
+    question: "Do you need separate values for IDF and SDF?"
+    type: boolean
+    source: user
+    ask: >
+      Do you need insoluble (IDF) and soluble (SDF) dietary fibre reported as
+      two separate values, rather than a single total fibre figure?
+    why: >
+      Splitting the fractions requires an extra filtration step that measurably
+      increases variability, so it is only worth doing when required.
+
+# ── Nodes ─────────────────────────────────────────────────────────────────────
+#
+# A node references either a single `attribute`, or `all_of` (a conjunction that
+# resolves to yes only when every part is yes, no when any part is no, and
+# unknown otherwise). Every node must define an `unknown` edge — the engine
+# refuses to load a tree that can fall through to an arbitrary branch.
 
 nodes:
 
   targeted_methods:
-    question: "Can all the fibres in your product be measured using targeted methods?"
     attribute: targeted_methods_measurable
-    attribute_type: boolean
-    extraction_prompt: >
-      Can all dietary fibres present in this product be measured and quantified
-      using specific targeted analytical methods (e.g. enzymatic, HPLC)?
     edges:
       "yes":
         type: outcome
@@ -27,13 +154,9 @@ nodes:
         next: fibre_content
 
   fibre_content:
-    question: "Is the expected fibre content greater than 0.5 g/100g?"
     attribute: fibre_content_g_per_100g
-    attribute_type: numeric
+    question: "Is the expected fibre content greater than 0.5 g/100 g?"
     threshold: 0.5
-    extraction_prompt: >
-      What is the expected total dietary fibre content of this product in grams
-      per 100g? Provide a number, or null if unknown.
     edges:
       above:
         type: node
@@ -41,20 +164,24 @@ nodes:
       below:
         type: outcome
         result: >
-          Existing methods for dietary fibre analyses are not well adapted for
-          this analysis; it is not recommended to attempt fibre analysis.
+          Existing methods for dietary fibre analysis are not well adapted to
+          this concentration; fibre analysis is not recommended.
         warning: true
-        # Set can_override: true so the agent/UI can offer the user the option
-        # to continue anyway (path: requires_cooking).
+        warning_message: >
+          Expected fibre content is at or below 0.5 g/100 g, which is around the
+          limit of quantification for these methods. Any result would carry a
+          relative uncertainty large enough to make it unusable for labelling.
         can_override: true
+        override_next: requires_cooking
+      "unknown":
+        type: node
+        next: requires_cooking
+        assumption: >
+          Fibre content is unknown; proceeding on the assumption that it exceeds
+          0.5 g/100 g. Confirm the expected content before committing to a method.
 
   requires_cooking:
-    question: "Should the product be cooked before consumption?"
     attribute: requires_cooking
-    attribute_type: boolean
-    extraction_prompt: >
-      Is this product intended to be cooked or heat-treated before consumption
-      (e.g. boiled, baked, fried)?
     edges:
       "yes":
         type: node
@@ -65,35 +192,31 @@ nodes:
       "unknown":
         type: node
         next: ndo_check_raw
+        assumption: >
+          Unclear whether the product needs cooking; treating it as ready-to-eat
+          and analysing it as sold.
 
-  # ── Cooked branch ────────────────────────────────────────────────────────────
+  # ── Cooked branch ───────────────────────────────────────────────────────────
 
   ndo_check_cooked:
-    question: "Does the product contain NDO and are NDO included in the local fibre definition?"
-    attribute: ndo_in_product_and_definition
-    attribute_type: boolean
-    extraction_prompt: >
-      Does this product contain non-digestible oligosaccharides (NDO) such as
-      FOS, GOS, or inulin, AND are NDO recognised as dietary fibre in the
-      applicable local/regulatory fibre definition?
+    question: "Does the product contain NDO, and do NDO count as fibre under your definition?"
+    all_of: [contains_ndo, ndo_in_fibre_definition]
     edges:
       "yes":
-        type: node
-        next: idf_sdf_cooked_ndo
-      "unknown":
         type: node
         next: idf_sdf_cooked_ndo
       "no":
         type: node
         next: idf_sdf_cooked_no_ndo
+      "unknown":
+        type: node
+        next: idf_sdf_cooked_ndo
+        assumption: >
+          NDO status is unresolved; taking the inclusive branch so that any NDO
+          present are captured rather than silently lost.
 
   idf_sdf_cooked_ndo:
-    question: "Do you need separate values for IDF and SDF?"
     attribute: needs_idf_sdf_separate
-    attribute_type: boolean
-    extraction_prompt: >
-      Is there a regulatory or labelling requirement to report insoluble dietary
-      fibre (IDF) and soluble dietary fibre (SDF) as separate values?
     edges:
       "no":
         type: outcome
@@ -101,14 +224,16 @@ nodes:
       "yes":
         type: outcome
         result: "Modified AOAC 2001.03 (expected to increase variability)"
+      "unknown":
+        type: outcome
+        result: "AOAC 2001.03"
+        warning: true
+        warning_message: >
+          Answered without knowing whether IDF and SDF must be reported
+          separately. If they must, use modified AOAC 2001.03 instead.
 
   idf_sdf_cooked_no_ndo:
-    question: "Do you need separate values for IDF and SDF?"
     attribute: needs_idf_sdf_separate
-    attribute_type: boolean
-    extraction_prompt: >
-      Is there a regulatory or labelling requirement to report insoluble dietary
-      fibre (IDF) and soluble dietary fibre (SDF) as separate values?
     edges:
       "no":
         type: outcome
@@ -116,35 +241,37 @@ nodes:
       "yes":
         type: outcome
         result: "AOAC 991.43 (expected to increase variability)"
+      "unknown":
+        type: outcome
+        result: "AOAC 991.43"
+        warning: true
+        warning_message: >
+          Answered without knowing whether IDF and SDF must be reported
+          separately. AOAC 991.43 is given because it can deliver either a total
+          or a split result; if no split is needed, 985.29 and 994.13 are also
+          valid and may be cheaper.
 
-  # ── Raw / not cooked branch ──────────────────────────────────────────────────
+  # ── Raw / not cooked branch ─────────────────────────────────────────────────
 
   ndo_check_raw:
-    question: "Does the product contain NDO and are NDO included in the local fibre definition?"
-    attribute: ndo_in_product_and_definition
-    attribute_type: boolean
-    extraction_prompt: >
-      Does this product contain non-digestible oligosaccharides (NDO) such as
-      FOS, GOS, or inulin, AND are NDO recognised as dietary fibre in the
-      applicable local/regulatory fibre definition?
+    question: "Does the product contain NDO, and do NDO count as fibre under your definition?"
+    all_of: [contains_ndo, ndo_in_fibre_definition]
     edges:
       "yes":
-        type: node
-        next: idf_sdf_raw_ndo
-      "unknown":
         type: node
         next: idf_sdf_raw_ndo
       "no":
         type: node
         next: rs_check
+      "unknown":
+        type: node
+        next: idf_sdf_raw_ndo
+        assumption: >
+          NDO status is unresolved; taking the inclusive branch so that any NDO
+          present are captured rather than silently lost.
 
   idf_sdf_raw_ndo:
-    question: "Do you need separate values for IDF and SDF?"
     attribute: needs_idf_sdf_separate
-    attribute_type: boolean
-    extraction_prompt: >
-      Is there a regulatory or labelling requirement to report insoluble dietary
-      fibre (IDF) and soluble dietary fibre (SDF) as separate values?
     edges:
       "no":
         type: outcome
@@ -152,33 +279,32 @@ nodes:
       "yes":
         type: outcome
         result: "Modified AOAC 2022.01 (expected to increase variability)"
+      "unknown":
+        type: outcome
+        result: "AOAC 2017.16"
+        warning: true
+        warning_message: >
+          Answered without knowing whether IDF and SDF must be reported
+          separately. If they must, use modified AOAC 2022.01 instead.
 
   rs_check:
-    question: "Does the sample contain resistant starch (RS)?"
     attribute: contains_resistant_starch
-    attribute_type: boolean
-    extraction_prompt: >
-      Does this product contain resistant starch (RS), such as from legumes,
-      unripe bananas, cooled cooked potatoes, or high-amylose starches?
     edges:
       "yes":
-        type: node
-        next: idf_sdf_raw_rs
-      "unknown":
-        # "don't know" → conservative: treat as yes to capture RS if present
         type: node
         next: idf_sdf_raw_rs
       "no":
         type: node
         next: idf_sdf_raw_no_rs
+      "unknown":
+        type: node
+        next: idf_sdf_raw_rs
+        assumption: >
+          Resistant starch content is unresolved; taking the RS branch, which
+          captures RS if it is present and is the conservative choice.
 
   idf_sdf_raw_rs:
-    question: "Do you need separate values for IDF and SDF?"
     attribute: needs_idf_sdf_separate
-    attribute_type: boolean
-    extraction_prompt: >
-      Is there a regulatory or labelling requirement to report insoluble dietary
-      fibre (IDF) and soluble dietary fibre (SDF) as separate values?
     edges:
       "no":
         type: outcome
@@ -186,14 +312,16 @@ nodes:
       "yes":
         type: outcome
         result: "Modified AOAC 2022.01 (expected to increase variability)"
+      "unknown":
+        type: outcome
+        result: "Modified AOAC 2017.16"
+        warning: true
+        warning_message: >
+          Answered without knowing whether IDF and SDF must be reported
+          separately. If they must, use modified AOAC 2022.01 instead.
 
   idf_sdf_raw_no_rs:
-    question: "Do you need separate values for IDF and SDF?"
     attribute: needs_idf_sdf_separate
-    attribute_type: boolean
-    extraction_prompt: >
-      Is there a regulatory or labelling requirement to report insoluble dietary
-      fibre (IDF) and soluble dietary fibre (SDF) as separate values?
     edges:
       "no":
         type: outcome
@@ -201,3 +329,12 @@ nodes:
       "yes":
         type: outcome
         result: "AOAC 991.43 (expected to increase variability)"
+      "unknown":
+        type: outcome
+        result: "AOAC 991.43"
+        warning: true
+        warning_message: >
+          Answered without knowing whether IDF and SDF must be reported
+          separately. AOAC 991.43 is given because it can deliver either a total
+          or a split result; if no split is needed, 985.29 and 994.13 are also
+          valid and may be cheaper.

@@ -1,291 +1,313 @@
 """
-Test script: run the AOAC decision tree using Gemma 4 for attribute extraction
-and the local RAG index for product context retrieval.
+Drive the AOAC decision tree with Gemma for extraction and the local corpus for
+evidence.
+
+The agent works the tree one node at a time. Product facts it infers from the
+description with retrieval support; anything only the customer can know — their
+labelling obligation, their jurisdiction's fibre definition — it stops and asks.
 
 Usage:
-    cd scripts/
     python3 test_gemma.py
-    python3 test_gemma.py "whole wheat bread enriched with inulin"
+    python3 test_gemma.py "whole wheat bread enriched with inulin (FOS), EU market"
+
+    # answer up front instead of being prompted
+    python3 test_gemma.py --answer needs_idf_sdf_separate=yes "canned kidney beans"
+
+    # never prompt; unanswered questions come back as `unresolved`
+    python3 test_gemma.py --non-interactive "canned kidney beans"
+
+    --anthropic     use Claude instead of Gemma for extraction
+    --no-rag        skip retrieval (useful for isolating retrieval problems)
 """
 
 from __future__ import annotations
 
+import argparse
 import json
-import math
-import os
 import sys
 import textwrap
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from dotenv import dotenv_values
-from google import genai
-from google.genai import types
-import openai
 
-from decision_tree_engine import DecisionTree, DecisionTreeEngine, TraversalResult, TreeNode
-
-# ── Config ────────────────────────────────────────────────────────────────────
+from decision_tree_engine import DecisionTree, DecisionTreeEngine, Session, TraversalResult
+from extractors import AnthropicExtractor, Extraction, ExtractionError, GemmaExtractor
+from rag_index import BoundRetriever, HybridIndex, OpenAIEmbedder
 
 ROOT = Path(__file__).parent.parent
-ENV = dotenv_values(ROOT / ".env.local")
+HERE = Path(__file__).parent
+ENV = {**dotenv_values(ROOT / ".env.local"), **dotenv_values(HERE / ".env")}
 
-GOOGLE_API_KEY = ENV.get("GOOGLE_GENERATIVE_AI_API_KEY", "")
-OPENAI_API_KEY = ENV.get("OPENAI_API_KEY", "")
 GEMMA_MODEL = "gemma-4-26b-a4b-it"
-EMBED_MODEL = "text-embedding-3-small"  # must match the index
+ANTHROPIC_MODEL = "claude-sonnet-5"
+EMBED_MODEL = "text-embedding-3-small"      # must match the model the index was built with
 
-# ── Logging ───────────────────────────────────────────────────────────────────
+SAMPLE_QUERY = (
+    "canned kidney beans, requires heating before eating, "
+    "no added NDO, high resistant starch content"
+)
 
-_log_entries: list[dict] = []
+RULE = "─" * 72
 
-def _log(entry: dict) -> None:
-    entry["ts"] = datetime.now().isoformat(timespec="seconds")
-    _log_entries.append(entry)
 
-def _print_section(title: str) -> None:
-    print(f"\n{'─' * 60}")
-    print(f"  {title}")
-    print('─' * 60)
+# ── Presentation ──────────────────────────────────────────────────────────────
 
-def _print_llm_call(kind: str, attributes: list[str], prompt_snippet: str, result: dict) -> None:
-    _print_section(f"LLM CALL ({kind}) — {', '.join(attributes)}")
-    print(f"Prompt (first 400 chars):\n{textwrap.indent(prompt_snippet[:400], '  ')}")
-    print(f"\nExtracted:\n{textwrap.indent(json.dumps(result, indent=2), '  ')}")
+def heading(title: str) -> None:
+    print(f"\n{RULE}\n  {title}\n{RULE}")
 
-def save_log(path: Path | None = None) -> Path:
-    out = path or (ROOT / "scripts" / f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl")
-    with open(out, "w") as f:
-        for entry in _log_entries:
-            f.write(json.dumps(entry) + "\n")
-    return out
 
-# ── RAG retrieval (pure Python, reads pre-built index-parts) ─────────────────
+def wrap(text: str, indent: str = "    ", label: str = "") -> str:
+    return textwrap.fill(
+        " ".join(text.split()),
+        width=88,
+        initial_indent=indent + label,
+        subsequent_indent=indent + " " * len(label),
+    )
 
-_index_cache: list[dict] | None = None
 
-def _load_index() -> list[dict]:
-    global _index_cache
-    if _index_cache is not None:
-        return _index_cache
-    chunks: list[dict] = []
-    parts_dir = ROOT / "index-parts"
-    for part_file in sorted(parts_dir.glob("index-part-*.json")):
-        part = json.loads(part_file.read_text())
-        chunks.extend(part["chunks"])
-    _index_cache = chunks
-    return chunks
+class Recorder:
+    """Prints the agent's work as it happens and keeps a structured log."""
 
-def _cosine(a: list[float], b: list[float]) -> float:
-    dot = sum(x * y for x, y in zip(a, b))
-    na = math.sqrt(sum(x * x for x in a))
-    nb = math.sqrt(sum(x * x for x in b))
-    return dot / (na * nb + 1e-12)
+    def __init__(self, verbose: bool = True) -> None:
+        self.entries: list[dict] = []
+        self.verbose = verbose
 
-def rag_search(query: str, top_k: int = 5, max_chars_per_chunk: int = 400) -> str:
-    """Embed query with OpenAI (same model as index), return context string.
+    def log(self, entry: dict) -> None:
+        self.entries.append({**entry, "ts": datetime.now().isoformat(timespec="seconds")})
 
-    Chunks are truncated to max_chars_per_chunk to keep prompts within model limits.
-    """
-    _print_section(f"RAG RETRIEVAL — query: {query[:80]}")
-    oa = openai.OpenAI(api_key=OPENAI_API_KEY)
-    resp = oa.embeddings.create(model=EMBED_MODEL, input=query)
-    q_emb = resp.data[0].embedding
+    def __call__(self, kind: str, payload: dict) -> None:
+        if kind == "retrieval":
+            hits = payload["hits"]
+            if self.verbose:
+                print(f"\n  retrieval for {payload['attribute']}")
+                print(wrap(payload["query"], "      ", "query: "))
+                for i, hit in enumerate(hits, 1):
+                    flags = []
+                    if hit.dense_rank is not None:
+                        flags.append(f"dense#{hit.dense_rank + 1}")
+                    if hit.lexical_rank is not None:
+                        flags.append(f"bm25#{hit.lexical_rank + 1}")
+                    print(f"      [{i}] {hit.cite()[:60]:60s} {'+'.join(flags)}")
+            self.log({
+                "type": "retrieval",
+                "attribute": payload["attribute"],
+                "query": payload["query"],
+                "hits": [
+                    {"file": h.file, "section": h.section, "score": round(h.score, 5),
+                     "dense_rank": h.dense_rank, "lexical_rank": h.lexical_rank}
+                    for h in hits
+                ],
+            })
 
-    chunks = _load_index()
-    scored = sorted(chunks, key=lambda c: _cosine(q_emb, c["embedding"]), reverse=True)
-    top = scored[:top_k]
+        elif kind == "extraction":
+            extraction: Extraction = payload["extraction"]
+            if self.verbose:
+                print(f"      → {payload['attribute']} = {extraction.value!r} "
+                      f"(confidence {extraction.confidence:.2f})")
+                if extraction.reasoning:
+                    print(wrap(extraction.reasoning, "        "))
+                for ev in extraction.evidence:
+                    print(f"        cites {ev}")
+            self.log({
+                "type": "extraction",
+                "attribute": payload["attribute"],
+                "value": extraction.value,
+                "confidence": extraction.confidence,
+                "reasoning": extraction.reasoning,
+                "evidence": [asdict(e) for e in extraction.evidence],
+            })
 
-    context_parts = []
-    for i, chunk in enumerate(top, 1):
-        section = chunk.get("section") or "General"
-        score = _cosine(q_emb, chunk["embedding"])
-        text = chunk["text"][:max_chars_per_chunk]
-        print(f"  [{i}] {chunk['file']} — {section}  (score={score:.3f})")
-        context_parts.append(f"[Source {i}][{section}]\n{text}")
+        elif kind == "answer":
+            self.log({"type": "answer", **payload})
 
-    _log({"type": "rag", "query": query, "top_k": top_k,
-          "results": [{"file": c["file"], "section": c.get("section"), "score": round(_cosine(q_emb, c["embedding"]), 4)} for c in top]})
+    def save(self) -> Path:
+        path = HERE / f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl"
+        with open(path, "w") as f:
+            for entry in self.entries:
+                f.write(json.dumps(entry, default=str) + "\n")
+        return path
 
-    return "\n\n".join(context_parts)
 
-# ── Gemma extractor ───────────────────────────────────────────────────────────
+def print_result(result: TraversalResult, tree: DecisionTree) -> None:
+    heading("RECOMMENDATION")
+    print(f"  Method     : {result.method}")
+    print(f"  Confidence : {result.confidence:.2f}"
+          f"{'  (every answer supported)' if result.is_reliable else ''}")
 
-class GemmaDecisionTreeEngine(DecisionTreeEngine):
-    """
-    Drops-in over DecisionTreeEngine, swapping Claude tool-use for Gemma 4
-    JSON-mode generation. Adds per-call logging.
-    """
+    if result.warning:
+        print("\n  ⚠ Warning")
+        print(wrap(result.warning_message, "    "))
+        if result.can_override:
+            print("    (re-run with --override to continue past this stop)")
 
-    def __init__(self, tree: DecisionTree, google_api_key: str, **kwargs) -> None:
-        # Pass a dummy anthropic client — we never call it.
-        import anthropic
-        super().__init__(tree, anthropic.Anthropic(api_key="unused"), **kwargs)
-        self._gemma = genai.Client(api_key=google_api_key)
+    if result.unresolved:
+        print("\n  ⚠ Answered without these — they could change the recommendation:")
+        for key in result.unresolved:
+            spec = tree.attributes[key]
+            print(wrap(spec.ask, "    ", "· "))
+            print(wrap(spec.why, "        "))
 
-    # ── Override extraction methods only ──────────────────────────────────────
+    if result.assumptions:
+        print("\n  Assumptions made:")
+        for assumption in result.assumptions:
+            print(wrap(f"· {assumption}", "    "))
 
-    def _extract_one(self, node: TreeNode, context: str) -> Any:
-        prompt = self._build_prompt([node], context)
-        schema = {"properties": {node.attribute: self._gemma_schema(node)}}
-        result = self._call_gemma(prompt, schema)
-        value = result.get(node.attribute)
-        _print_llm_call("single", [node.attribute], prompt, {node.attribute: value})
-        _log({"type": "extract_one", "node": node.id, "attribute": node.attribute,
-              "value": value, "prompt_snippet": prompt[:400]})
-        print(f"\n  → {node.attribute} = {value}")
-        return value
+    heading("HOW IT GOT THERE")
+    for i, step in enumerate(result.steps, 1):
+        extraction = step.extraction
+        origin = extraction.origin if extraction else "—"
+        confidence = f"{extraction.confidence:.2f}" if extraction else "—"
+        print(f"\n  {i}. {step.question}")
+        print(f"     answer: {step.value!r}   [{origin}, confidence {confidence}]")
+        print(f"     → {step.edge.result or step.edge.next}")
+        if extraction and extraction.reasoning and origin == "model":
+            print(wrap(extraction.reasoning, "        "))
 
-    def _extract_batch(self, nodes: list[TreeNode], context: str) -> dict[str, Any]:
-        # Deduplicate by attribute key
-        seen: set[str] = set()
-        unique: list[TreeNode] = []
-        for n in nodes:
-            if n.attribute not in seen:
-                seen.add(n.attribute)
-                unique.append(n)
+    evidence = result.evidence()
+    if evidence:
+        heading("EVIDENCE CITED")
+        for ev in evidence:
+            print(f"\n  {ev}")
+            print(wrap(ev.quote, "      "))
 
-        prompt = self._build_prompt(unique, context)
-        properties = {n.attribute: self._gemma_schema(n) for n in unique}
-        schema = {"properties": properties}
-        result = self._call_gemma(prompt, schema)
-        _print_llm_call("batch", list(result.keys()), prompt, result)
-        _log({"type": "extract_batch", "nodes": [n.id for n in unique],
-              "attributes": list(result.keys()), "values": result,
-              "prompt_snippet": prompt[:400]})
-        for attr, val in result.items():
-            print(f"  → {attr} = {val}")
-        return result
 
-    # ── Gemma call ────────────────────────────────────────────────────────────
+# ── Interaction ───────────────────────────────────────────────────────────────
 
-    def _call_gemma(self, prompt: str, schema: dict, max_retries: int = 4) -> dict:
-        # Gemma doesn't support response_schema — append the JSON spec to the
-        # prompt and parse the output manually.
-        field_specs = "\n".join(
-            f'  "{k}": {self._schema_hint(v)}'
-            for k, v in schema.get("properties", {}).items()
-        )
-        full_prompt = (
-            f"{prompt}\n\n"
-            f"Respond with ONLY a JSON object (no markdown, no explanation):\n"
-            f"{{\n{field_specs}\n}}"
-        )
-        import time
-        from google.genai import errors as genai_errors
+def ask_user(session: Session) -> None:
+    """Prompt for whatever the agent could not establish on its own."""
+    while session.pending:
+        question = session.pending
+        heading("QUESTION FOR YOU")
+        print(wrap(question.prompt, "  "))
+        print(wrap(f"Why it matters: {question.why}", "    "))
 
-        last_exc: Exception | None = None
-        for attempt in range(max_retries):
-            try:
-                response = self._gemma.models.generate_content(
-                    model=GEMMA_MODEL,
-                    contents=full_prompt,
-                )
-                raw = (response.text or "{}").strip()
-                try:
-                    return json.loads(raw)
-                except json.JSONDecodeError:
-                    import re
-                    m = re.search(r'\{.*?\}', raw, re.DOTALL)
-                    if m:
-                        try:
-                            return json.loads(m.group())
-                        except json.JSONDecodeError:
-                            pass
-                    return {}
-            except genai_errors.ServerError as exc:
-                last_exc = exc
-                wait = 2 ** attempt
-                print(f"  [retry {attempt + 1}/{max_retries}] server error — waiting {wait}s …")
-                time.sleep(wait)
+        weak = question.because_low_confidence
+        if weak is not None:
+            print(f"\n    (the model guessed {weak.value!r} but was only "
+                  f"{weak.confidence:.0%} confident)")
 
-        raise RuntimeError(f"Gemma API failed after {max_retries} retries") from last_exc
+        options = "/".join(question.options) if question.options else "a number, or 'unknown'"
+        try:
+            answer = input(f"\n  [{options}] > ").strip()
+        except EOFError:
+            print("\n  no input available — recording as unknown")
+            answer = "unknown"
+        session.answer(answer or "unknown")
 
-    def _schema_hint(self, schema: dict) -> str:
-        if "enum" in schema:
-            return f"one of {schema['enum']}"
-        if schema.get("type") == "NUMBER":
-            return "<number or null>"
-        return '"<value>"'
-
-    # ── Helpers ───────────────────────────────────────────────────────────────
-
-    def _build_prompt(self, nodes: list[TreeNode], context: str) -> str:
-        questions = "\n".join(f"- {n.extraction_prompt.strip()}" for n in nodes)
-        return (
-            "You are a food science expert. Based ONLY on the product information below, "
-            "answer each question as accurately as possible.\n\n"
-            f"PRODUCT INFORMATION:\n{context}\n\n"
-            f"QUESTIONS TO ANSWER:\n{questions}\n\n"
-            "Respond in JSON using the exact field names specified."
-        )
-
-    def _gemma_schema(self, node: TreeNode) -> dict:
-        if node.attribute_type == "boolean":
-            return {"type": "STRING", "enum": ["yes", "no", "unknown"],
-                    "description": node.question}
-        if node.attribute_type == "numeric":
-            return {"type": "NUMBER", "description": f"{node.question} (number or null if unknown)"}
-        # categorical — derive from edge keys
-        return {"type": "STRING", "enum": list(node.edges.keys()),
-                "description": node.question}
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-SAMPLE_QUERIES = [
-    # "whole wheat bread enriched with inulin (FOS), sold ready-to-eat, EU market, lab needs separate IDF/SDF values",
-    "canned kidney beans, requires heating before eating, no added NDO, high resistant starch content",
-    # "fresh apple juice with no fibre enrichment, expected fibre 0.2 g/100g",
-]
+def build_engine(args, recorder: Recorder) -> DecisionTreeEngine:
+    tree = DecisionTree.from_yaml(HERE / "decision_tree.yaml")
 
-def run(product_query: str) -> TraversalResult:
-    print(f"\n{'═' * 60}")
-    print(f"  PRODUCT QUERY: {product_query}")
-    print('═' * 60)
+    retriever = None
+    if not args.no_rag:
+        openai_key = ENV.get("OPENAI_API_KEY", "")
+        if not openai_key:
+            raise SystemExit("OPENAI_API_KEY is required for retrieval (or pass --no-rag)")
+        index = HybridIndex.load(ROOT / "index-parts")
+        print(f"  corpus: {len(index.chunks)} usable chunks")
+        retriever = BoundRetriever(index, OpenAIEmbedder(openai_key, model=EMBED_MODEL))
 
-    _log({"type": "run_start", "query": product_query, "model": GEMMA_MODEL})
+    if args.anthropic:
+        import anthropic
 
-    # Step 1: RAG retrieval — scientific background from the corpus
-    rag_context = rag_search(product_query)
+        key = ENV.get("ANTHROPIC_API_KEY", "")
+        if not key:
+            raise SystemExit("ANTHROPIC_API_KEY is not set in .env.local")
+        extractor: Any = AnthropicExtractor(anthropic.Anthropic(api_key=key), ANTHROPIC_MODEL)
+        print(f"  extractor: {ANTHROPIC_MODEL}")
+    else:
+        key = ENV.get("GOOGLE_GENERATIVE_AI_API_KEY", "")
+        if not key:
+            raise SystemExit("GOOGLE_GENERATIVE_AI_API_KEY is not set")
+        extractor = GemmaExtractor(
+            key,
+            GEMMA_MODEL,
+            on_retry=lambda n, total, wait, err: print(
+                f"      [retry {n}/{total}] {type(err).__name__} — waiting {wait}s"
+            ),
+        )
+        print(f"  extractor: {GEMMA_MODEL}")
 
-    # Combine the user's product description (primary source of product facts)
-    # with the RAG-retrieved scientific background.
-    context = (
-        f"PRODUCT DESCRIPTION (primary source for product-specific questions):\n"
-        f"{product_query}\n\n"
-        f"SUPPORTING SCIENTIFIC CONTEXT (from research corpus):\n"
-        f"{rag_context}"
-    )
+    return DecisionTreeEngine(tree, extractor, retriever=retriever, on_event=recorder)
 
-    # Step 2: Decision tree traversal with Gemma
-    tree = DecisionTree.from_yaml(Path(__file__).parent / "decision_tree.yaml")
-    # batch_depth_threshold=99 → always lazy (one attribute per LLM call).
-    # Gemma's context window is limited and the RAG context is already large.
-    engine = GemmaDecisionTreeEngine(tree, GOOGLE_API_KEY, batch_depth_threshold=99)
 
-    _print_section("DECISION TREE TRAVERSAL")
-    result = engine.run(context)
+def parse_answers(pairs: list[str]) -> dict[str, str]:
+    answers: dict[str, str] = {}
+    for pair in pairs:
+        if "=" not in pair:
+            raise SystemExit(f"--answer expects attribute=value, got {pair!r}")
+        key, value = pair.split("=", 1)
+        answers[key.strip()] = value.strip()
+    return answers
 
-    # Step 3: Print result
-    _print_section("RESULT")
-    print(f"  Recommended method : {result.method}")
-    print(f"  Traversal path     : {' → '.join(result.path)}")
-    if result.warning:
-        print(f"  ⚠ Warning          : low fibre content — result may be unreliable")
-    print(f"\n  All extracted attributes:")
-    for k, v in result.attrs.items():
-        print(f"    {k}: {v}")
 
-    _log({"type": "result", "method": result.method, "path": result.path,
-          "attrs": result.attrs, "warning": result.warning})
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("query", nargs="?", default=SAMPLE_QUERY)
+    parser.add_argument("--answer", action="append", default=[],
+                        metavar="attr=value", help="supply an answer up front")
+    parser.add_argument("--non-interactive", action="store_true",
+                        help="never prompt; report gaps as unresolved instead")
+    parser.add_argument("--override", action="store_true",
+                        help="continue past an overridable stop, e.g. low fibre content")
+    parser.add_argument("--anthropic", action="store_true")
+    parser.add_argument("--no-rag", action="store_true")
+    parser.add_argument("--quiet", action="store_true", help="hide per-node working")
+    args = parser.parse_args()
 
-    return result
+    interactive = not args.non_interactive and sys.stdin.isatty()
+
+    heading(f"PRODUCT: {args.query}")
+    recorder = Recorder(verbose=not args.quiet)
+    recorder.log({"type": "run_start", "query": args.query,
+                  "interactive": interactive, "anthropic": args.anthropic})
+
+    engine = build_engine(args, recorder)
+    tree = engine.tree
+
+    known = parse_answers(args.answer)
+    unknown_keys = set(known) - set(tree.attributes)
+    if unknown_keys:
+        raise SystemExit(f"unknown attribute(s) in --answer: {sorted(unknown_keys)}")
+
+    heading("TRAVERSAL")
+    try:
+        session = engine.start(args.query, known=known, interactive=interactive)
+        if interactive:
+            ask_user(session)
+        if args.override and session.result and session.result.can_override:
+            session.override()
+            if interactive:
+                ask_user(session)
+    except ExtractionError as exc:
+        print(f"\n  extraction failed: {exc}")
+        recorder.log({"type": "error", "error": str(exc)})
+        print(f"\n  Log saved → {recorder.save().relative_to(ROOT)}")
+        return 1
+
+    result = session.result
+    assert result is not None
+    print_result(result, tree)
+
+    recorder.log({
+        "type": "result",
+        "method": result.method,
+        "path": result.path,
+        "confidence": result.confidence,
+        "warning": result.warning,
+        "unresolved": result.unresolved,
+        "assumptions": result.assumptions,
+        "attrs": {k: {"value": v.value, "confidence": v.confidence, "origin": v.origin}
+                  for k, v in result.attrs.items()},
+    })
+    print(f"\n  Log saved → {recorder.save().relative_to(ROOT)}")
+    return 0
 
 
 if __name__ == "__main__":
-    query = sys.argv[1] if len(sys.argv) > 1 else SAMPLE_QUERIES[0]
-    result = run(query)
-
-    log_path = save_log()
-    print(f"\n  Log saved → {log_path.relative_to(ROOT)}")
+    raise SystemExit(main())
